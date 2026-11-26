@@ -2,7 +2,7 @@
 
 > **Proyecto:** Sistema de Arqueo y Cierre de Caja Inteligente  
 > **Versión:** 1.0 (MVP)  
-> **Issue asociado:** `#2`  
+> **Issue asociado:** `#11`  
 > **Milestone:** `v0.1 - Análisis y Diseño Funcional`  
 > **Documento de referencia:** [01 - Alcance, Actores y Reglas de Negocio](./01-alcance-y-reglas.md)
 
