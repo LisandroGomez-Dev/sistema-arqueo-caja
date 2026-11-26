@@ -23,10 +23,10 @@ En la mayoría de los comercios chicos y medianos, el cierre de caja sigue siend
 
 | Documento | Descripción | Estado |
 | :--- | :--- | :---: |
-| [01 - Alcance, Actores y Reglas de Negocio](./docs/01-alcance-y-reglas.md) | ERS del MVP: propósito, alcance, perfiles, RN, RF, RNF, riesgos y Casos de Uso. | ✅ Completado |
-| [02 - Modelo de Datos (DER)](./docs/02-modelo-datos.md) | Diseño entidad-relación (3FN) y diccionario de datos. | ✅ Completado |
-| `03 - Arquitectura en 2 Capas` | Diagrama de componentes, stack y contrato con Gemini API. | ⏳ Pendiente (#3) |
-| `04 - Flujo de Pantallas (UX/UI)` | Wireframes y estados visuales de mostrador. | ⏳ Pendiente (#4) |
+| [01 - Alcance, Actores y Reglas de Negocio](./docs/01-alcance-y-reglas.md) | ERS del MVP: propósito, alcance, perfiles, RN, RF, RNF, riesgos y Casos de Uso. | ✅ Completado (#1) |
+| [02 - Modelo de Datos (DER)](./docs/02-modelo-datos.md) | Diseño entidad-relación (3FN) y diccionario de datos. | ✅ Completado (#11) |
+| [03 - Arquitectura en 2 Capas](./docs/03-arquitectura-dos-capas.md) | Arquitectura Hexagonal, Patrones GoF, Diagrama de Clases, 4 Secuencias UML y contrato Gemini API. | ✅ Completado (#12) |
+| `04 - Flujo de Pantallas (UX/UI)` | Wireframes y estados visuales de mostrador. | ⏳ Pendiente (#13) |
 
 ---
 
