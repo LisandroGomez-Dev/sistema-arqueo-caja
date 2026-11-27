@@ -1,0 +1,198 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum RolUsuario {
+  CAJERO
+  ENCARGADO
+}
+
+enum EstadoTurno {
+  ABIERTO
+  CERRADO
+}
+
+enum TipoMovimiento {
+  INGRESO
+  EGRESO
+}
+
+enum OrigenCarga {
+  MANUAL
+  IA_VOZ_TEXTO
+  IA_COMPROBANTE
+}
+
+enum EstadoMovimiento {
+  ACTIVO
+  ANULADO
+}
+
+enum CategoriaIncidencia {
+  POSNET
+  QR_PENDIENTE
+  DESCUADRE
+  SISTEMA
+  OTRO
+}
+
+enum EstadoIncidencia {
+  PENDIENTE
+  RESUELTA
+}
+
+model Usuario {
+  id_usuario      String     @id @default(uuid()) @db.VarChar(36)
+  nombre_completo String     @db.VarChar(100)
+  pin_acceso_hash String     @db.VarChar(255)
+  rol_usuario     RolUsuario
+  esta_activo     Boolean    @default(true)
+  fecha_alta      DateTime   @default(now()) @db.Timestamptz(6)
+
+  configuracionesActualizadas ConfiguracionCaja[] @relation("UsuarioActualizacionConfig")
+  turnosAbiertos              TurnoCaja[]         @relation("UsuarioAperturaTurno")
+  movimientosRegistrados      MovimientoCaja[]    @relation("UsuarioRegistroMovimiento")
+  movimientosAnulados         MovimientoCaja[]    @relation("UsuarioAnulacionMovimiento")
+  arqueosCerrados             ArqueoCierre[]      @relation("UsuarioCierreArqueo")
+  incidenciasReportadas       IncidenciaTurno[]   @relation("UsuarioReporteIncidencia")
+  incidenciasResueltas        IncidenciaTurno[]   @relation("UsuarioResolucionIncidencia")
+
+  @@map("usuarios")
+}
+
+model ConfiguracionCaja {
+  id_configuracion           String   @id @default(uuid()) @db.VarChar(36)
+  nombre_comercio            String   @db.VarChar(100)
+  multiplo_redondeo_efectivo Decimal  @default(0) @db.Decimal(12, 2)
+  id_usuario_actualizacion   String   @db.VarChar(36)
+  fecha_ultima_actualizacion DateTime @default(now()) @db.Timestamptz(6)
+
+  usuario_actualizacion Usuario @relation("UsuarioActualizacionConfig", fields: [id_usuario_actualizacion], references: [id_usuario])
+
+  @@map("configuracion_caja")
+}
+
+model MetodoPago {
+  id_metodo_pago   String  @id @default(uuid()) @db.VarChar(36)
+  codigo_metodo    String  @unique @db.VarChar(30)
+  nombre_metodo    String  @db.VarChar(60)
+  permite_redondeo Boolean
+  esta_activo      Boolean @default(true)
+
+  movimientos     MovimientoCaja[]
+  detalles_arqueo DetalleArqueoMetodo[]
+
+  @@map("metodos_pago")
+}
+
+model Caja {
+  id_caja     String  @id @default(uuid()) @db.VarChar(36)
+  numero_caja Int     @unique
+  nombre_caja String  @db.VarChar(60)
+  esta_activa Boolean @default(true)
+
+  turnos TurnoCaja[]
+
+  @@map("cajas")
+}
+
+model TurnoCaja {
+  id_turno               String      @id @default(uuid()) @db.VarChar(36)
+  id_caja                String      @db.VarChar(36)
+  id_usuario_apertura    String      @db.VarChar(36)
+  fondo_inicial_efectivo Decimal     @db.Decimal(12, 2)
+  estado_turno           EstadoTurno @default(ABIERTO)
+  fecha_hora_apertura    DateTime    @default(now()) @db.Timestamptz(6)
+  fecha_hora_cierre      DateTime?   @db.Timestamptz(6)
+
+  caja             Caja              @relation(fields: [id_caja], references: [id_caja])
+  usuario_apertura Usuario           @relation("UsuarioAperturaTurno", fields: [id_usuario_apertura], references: [id_usuario])
+  movimientos      MovimientoCaja[]
+  arqueo_cierre    ArqueoCierre?
+  incidencias      IncidenciaTurno[]
+
+  @@map("turnos_caja")
+}
+
+model MovimientoCaja {
+  id_movimiento        String           @id @default(uuid()) @db.VarChar(36)
+  id_turno             String           @db.VarChar(36)
+  id_metodo_pago       String           @db.VarChar(36)
+  id_usuario_registro  String           @db.VarChar(36)
+  tipo_movimiento      TipoMovimiento
+  monto_operacion      Decimal          @db.Decimal(12, 2)
+  concepto_descripcion String?          @db.Text
+  origen_carga         OrigenCarga
+  url_comprobante      String?          @db.VarChar(255)
+  estado_movimiento    EstadoMovimiento @default(ACTIVO)
+  motivo_anulacion     String?          @db.Text
+  id_usuario_anulacion String?          @db.VarChar(36)
+  fecha_hora_anulacion DateTime?        @db.Timestamptz(6)
+  fecha_hora_registro  DateTime         @default(now()) @db.Timestamptz(6)
+
+  turno             TurnoCaja  @relation(fields: [id_turno], references: [id_turno])
+  metodo_pago       MetodoPago @relation(fields: [id_metodo_pago], references: [id_metodo_pago])
+  usuario_registro  Usuario    @relation("UsuarioRegistroMovimiento", fields: [id_usuario_registro], references: [id_usuario])
+  usuario_anulacion Usuario?   @relation("UsuarioAnulacionMovimiento", fields: [id_usuario_anulacion], references: [id_usuario])
+
+  @@map("movimientos_caja")
+}
+
+model ArqueoCierre {
+  id_arqueo                  String   @id @default(uuid()) @db.VarChar(36)
+  id_turno                   String   @unique @db.VarChar(36)
+  id_usuario_cierre          String   @db.VarChar(36)
+  multiplo_redondeo_aplicado Decimal  @db.Decimal(12, 2)
+  total_esperado_general     Decimal  @db.Decimal(12, 2)
+  total_declarado_general    Decimal  @db.Decimal(12, 2)
+  ajuste_redondeo_total      Decimal  @db.Decimal(12, 2)
+  diferencia_real_total      Decimal  @db.Decimal(12, 2)
+  observaciones_cierre       String?  @db.Text
+  fecha_hora_cierre          DateTime @default(now()) @db.Timestamptz(6)
+
+  turno          TurnoCaja             @relation(fields: [id_turno], references: [id_turno])
+  usuario_cierre Usuario               @relation("UsuarioCierreArqueo", fields: [id_usuario_cierre], references: [id_usuario])
+  detalles       DetalleArqueoMetodo[]
+
+  @@map("arqueos_cierre")
+}
+
+model DetalleArqueoMetodo {
+  id_detalle_arqueo String  @id @default(uuid()) @db.VarChar(36)
+  id_arqueo         String  @db.VarChar(36)
+  id_metodo_pago    String  @db.VarChar(36)
+  monto_esperado    Decimal @db.Decimal(12, 2)
+  monto_declarado   Decimal @db.Decimal(12, 2)
+  ajuste_redondeo   Decimal @db.Decimal(12, 2)
+  diferencia_real   Decimal @db.Decimal(12, 2)
+
+  arqueo      ArqueoCierre @relation(fields: [id_arqueo], references: [id_arqueo])
+  metodo_pago MetodoPago   @relation(fields: [id_metodo_pago], references: [id_metodo_pago])
+
+  @@unique([id_arqueo, id_metodo_pago])
+  @@map("detalle_arqueo_metodo")
+}
+
+model IncidenciaTurno {
+  id_incidencia         String              @id @default(uuid()) @db.VarChar(36)
+  id_turno              String              @db.VarChar(36)
+  id_usuario_reporte    String              @db.VarChar(36)
+  categoria_incidencia  CategoriaIncidencia
+  detalle_incidencia    String              @db.Text
+  estado_incidencia     EstadoIncidencia    @default(PENDIENTE)
+  id_usuario_resolucion String?             @db.VarChar(36)
+  fecha_hora_resolucion DateTime?           @db.Timestamptz(6)
+  fecha_hora_reporte    DateTime            @default(now()) @db.Timestamptz(6)
+
+  turno              TurnoCaja @relation(fields: [id_turno], references: [id_turno])
+  usuario_reporte    Usuario   @relation("UsuarioReporteIncidencia", fields: [id_usuario_reporte], references: [id_usuario])
+  usuario_resolucion Usuario?  @relation("UsuarioResolucionIncidencia", fields: [id_usuario_resolucion], references: [id_usuario])
+
+  @@map("incidencias_turno")
+}
