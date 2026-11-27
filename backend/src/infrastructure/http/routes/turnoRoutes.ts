@@ -1,7 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import type { CajaFacade } from '../../../application/facade/CajaFacade.js';
 import { autenticarJWT, requerirRol } from '../plugins/jwtAuth.js';
-import { registrarMovimientoBodySchema } from '../schemas/movimientoSchemas.js';
+import {
+  anularMovimientoBodySchema,
+  registrarMovimientoBodySchema,
+} from '../schemas/movimientoSchemas.js';
 import { abrirTurnoBodySchema } from '../schemas/turnoSchemas.js';
 
 export async function turnoRoutes(
@@ -105,6 +108,29 @@ export async function turnoRoutes(
       });
 
       return reply.status(201).send(resultado);
+    },
+  );
+
+  app.patch<{ Params: { idMovimiento: string } }>(
+    '/movimientos/:idMovimiento/anular',
+    { preHandler: preHandlerEncargado },
+    async (request, reply) => {
+      const body = anularMovimientoBodySchema.parse(request.body);
+      const resultado = await cajaFacade.anularMovimiento({
+        idMovimiento: request.params.idMovimiento,
+        idUsuarioEncargado: request.user.id_usuario,
+        motivoAnulacion: body.motivo_anulacion,
+        reemplazo: body.reemplazo
+          ? {
+              tipoMovimiento: body.reemplazo.tipo_movimiento,
+              codigoMetodoPago: body.reemplazo.codigo_metodo_pago,
+              montoOperacion: body.reemplazo.monto_operacion,
+              conceptoDescripcion: body.reemplazo.concepto_descripcion,
+            }
+          : null,
+      });
+
+      return reply.status(200).send(resultado);
     },
   );
 }

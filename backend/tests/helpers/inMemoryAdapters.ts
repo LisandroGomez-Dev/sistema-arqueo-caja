@@ -208,9 +208,34 @@ export class InMemoryMovimientoRepository implements MovimientoRepositoryPort {
     };
   }
 
+  async buscarPorId(idMovimiento: string): Promise<MovimientoCaja | null> {
+    return (
+      this.movimientos.find((m) => m.idMovimiento === idMovimiento) ?? null
+    );
+  }
+
   async guardar(movimiento: MovimientoCaja): Promise<MovimientoDTO> {
     this.movimientos.push(movimiento);
     return this.aDTO(movimiento);
+  }
+
+  async actualizarAnulacion(movimiento: MovimientoCaja): Promise<MovimientoDTO> {
+    return this.aDTO(movimiento);
+  }
+
+  async anularYReemplazar(
+    movimientoAnulado: MovimientoCaja,
+    movimientoReemplazo: MovimientoCaja,
+  ): Promise<{
+    movimiento: MovimientoDTO;
+    movimientoReemplazo: MovimientoDTO;
+  }> {
+    this.movimientos.push(movimientoReemplazo);
+    const [movimiento, reemplazoDTO] = await Promise.all([
+      this.aDTO(movimientoAnulado),
+      this.aDTO(movimientoReemplazo),
+    ]);
+    return { movimiento, movimientoReemplazo: reemplazoDTO };
   }
 
   async listarPorTurno(idTurno: string): Promise<MovimientoDTO[]> {

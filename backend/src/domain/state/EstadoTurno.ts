@@ -1,3 +1,7 @@
+import type { MovimientoCaja } from '../entities/MovimientoCaja.js';
+import type { TurnoCaja } from '../entities/TurnoCaja.js';
+import type { Usuario } from '../entities/Usuario.js';
+
 export type CodigoEstadoTurno = 'ABIERTO' | 'CERRADO';
 
 /**
@@ -7,4 +11,10 @@ export interface EstadoTurno {
   obtenerCodigoEstado(): CodigoEstadoTurno;
   permiteModificaciones(): boolean;
   validarOperacion(): void;
+  anularMovimiento(
+    turno: TurnoCaja,
+    movimiento: MovimientoCaja,
+    motivo: string,
+    encargado: Usuario,
+  ): void;
 }

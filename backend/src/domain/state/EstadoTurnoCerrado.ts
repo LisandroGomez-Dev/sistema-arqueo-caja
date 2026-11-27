@@ -1,3 +1,6 @@
+import type { MovimientoCaja } from '../entities/MovimientoCaja.js';
+import type { TurnoCaja } from '../entities/TurnoCaja.js';
+import type { Usuario } from '../entities/Usuario.js';
 import { TurnoCerradoError } from '../errors/DominioError.js';
 import type { CodigoEstadoTurno, EstadoTurno } from './EstadoTurno.js';
 
@@ -14,6 +17,15 @@ export class EstadoTurnoCerrado implements EstadoTurno {
   }
 
   validarOperacion(): void {
+    throw new TurnoCerradoError();
+  }
+
+  anularMovimiento(
+    _turno: TurnoCaja,
+    _movimiento: MovimientoCaja,
+    _motivo: string,
+    _encargado: Usuario,
+  ): void {
     throw new TurnoCerradoError();
   }
 }

@@ -1,8 +1,12 @@
 import {
   ConceptoObligatorioError,
   MontoInvalidoError,
+  MotivoAnulacionObligatorioError,
+  MovimientoYaAnuladoError,
+  RolNoAutorizadoError,
 } from '../errors/DominioError.js';
 import { Dinero } from '../value-objects/Dinero.js';
+import type { Usuario } from './Usuario.js';
 
 export type TipoMovimiento = 'INGRESO' | 'EGRESO';
 export type OrigenCarga = 'MANUAL' | 'IA_VOZ_TEXTO' | 'IA_COMPROBANTE';
@@ -38,11 +42,12 @@ export class MovimientoCaja {
   readonly conceptoDescripcion: string | null;
   readonly origenCarga: OrigenCarga;
   readonly urlComprobante: string | null;
-  readonly estadoMovimiento: EstadoMovimiento;
-  readonly motivoAnulacion: string | null;
-  readonly idUsuarioAnulacion: string | null;
-  readonly fechaHoraAnulacion: Date | null;
   readonly fechaHoraRegistro: Date;
+
+  private _estadoMovimiento: EstadoMovimiento;
+  private _motivoAnulacion: string | null;
+  private _idUsuarioAnulacion: string | null;
+  private _fechaHoraAnulacion: Date | null;
 
   constructor(props: MovimientoCajaProps) {
     if (!props.montoOperacion.esPositivo()) {
@@ -65,15 +70,57 @@ export class MovimientoCaja {
     this.conceptoDescripcion = conceptoLimpio;
     this.origenCarga = props.origenCarga;
     this.urlComprobante = props.urlComprobante?.trim() || null;
-    this.estadoMovimiento = props.estadoMovimiento;
-    this.motivoAnulacion = props.motivoAnulacion;
-    this.idUsuarioAnulacion = props.idUsuarioAnulacion;
-    this.fechaHoraAnulacion = props.fechaHoraAnulacion;
     this.fechaHoraRegistro = props.fechaHoraRegistro;
+
+    this._estadoMovimiento = props.estadoMovimiento;
+    this._motivoAnulacion = props.motivoAnulacion;
+    this._idUsuarioAnulacion = props.idUsuarioAnulacion;
+    this._fechaHoraAnulacion = props.fechaHoraAnulacion;
+  }
+
+  get estadoMovimiento(): EstadoMovimiento {
+    return this._estadoMovimiento;
+  }
+
+  get motivoAnulacion(): string | null {
+    return this._motivoAnulacion;
+  }
+
+  get idUsuarioAnulacion(): string | null {
+    return this._idUsuarioAnulacion;
+  }
+
+  get fechaHoraAnulacion(): Date | null {
+    return this._fechaHoraAnulacion;
   }
 
   estaActivo(): boolean {
-    return this.estadoMovimiento === 'ACTIVO';
+    return this._estadoMovimiento === 'ACTIVO';
+  }
+
+  /**
+   * Anulación lógica simple (RN-01, RN-08): nunca elimina el registro ni altera monto/método.
+   */
+  anular(motivo: string, encargado: Usuario): void {
+    if (!encargado.puedeAnular()) {
+      throw new RolNoAutorizadoError(
+        'Solo un usuario con rol ENCARGADO puede anular movimientos (RN-08).',
+      );
+    }
+
+    if (!this.estaActivo()) {
+      throw new MovimientoYaAnuladoError();
+    }
+
+    const motivoLimpio = motivo.trim();
+    if (motivoLimpio.length < 3) {
+      throw new MotivoAnulacionObligatorioError();
+    }
+
+    this._estadoMovimiento = 'ANULADO';
+    this._motivoAnulacion = motivoLimpio;
+    this._idUsuarioAnulacion = encargado.idUsuario;
+    this._fechaHoraAnulacion = new Date();
   }
 
   /**

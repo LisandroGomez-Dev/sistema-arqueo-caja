@@ -32,3 +32,9 @@ export interface RegistrarMovimientoResultadoDTO {
   movimiento: MovimientoDTO;
   turno: TurnoActivoDTO;
 }
+
+export interface AnularMovimientoResultadoDTO {
+  movimiento: MovimientoDTO;
+  movimiento_reemplazo: MovimientoDTO | null;
+  turno: TurnoActivoDTO;
+}

@@ -4,6 +4,7 @@ import {
   TurnoYaAbiertoError,
 } from '../../domain/errors/DominioError.js';
 import type {
+  AnularMovimientoResultadoDTO,
   MovimientoDTO,
   RegistrarMovimientoResultadoDTO,
 } from '../dto/MovimientoDTO.js';
@@ -21,6 +22,10 @@ import type { PinHasherPort } from '../ports/out/PinHasherPort.js';
 import type { TurnoRepositoryPort } from '../ports/out/TurnoRepositoryPort.js';
 import type { UsuarioRepositoryPort } from '../ports/out/UsuarioRepositoryPort.js';
 import { AbrirTurnoUseCase } from '../use-cases/AbrirTurnoUseCase.js';
+import {
+  AnularMovimientoUseCase,
+  type AnularMovimientoInput,
+} from '../use-cases/AnularMovimientoUseCase.js';
 import { AutenticarUsuarioUseCase } from '../use-cases/AutenticarUsuarioUseCase.js';
 import { ListarMovimientosTurnoUseCase } from '../use-cases/ListarMovimientosTurnoUseCase.js';
 import { ObtenerTurnoActivoUseCase } from '../use-cases/ObtenerTurnoActivoUseCase.js';
@@ -54,6 +59,7 @@ export class CajaFacade {
   private readonly obtenerTurnoPorIdUC: ObtenerTurnoPorIdUseCase;
   private readonly registrarMovimientoUC: RegistrarMovimientoUseCase;
   private readonly listarMovimientosTurnoUC: ListarMovimientosTurnoUseCase;
+  private readonly anularMovimientoUC: AnularMovimientoUseCase;
 
   constructor(deps: CajaFacadeDependencies) {
     this.turnoRepo = deps.turnoRepo;
@@ -72,6 +78,12 @@ export class CajaFacade {
     this.listarMovimientosTurnoUC = new ListarMovimientosTurnoUseCase(
       deps.turnoRepo,
       deps.movimientoRepo,
+    );
+    this.anularMovimientoUC = new AnularMovimientoUseCase(
+      deps.turnoRepo,
+      deps.usuarioRepo,
+      deps.movimientoRepo,
+      deps.metodoPagoRepo,
     );
   }
 
@@ -152,5 +164,11 @@ export class CajaFacade {
     solicitante: { idUsuario: string; rolUsuario: RolUsuario },
   ): Promise<MovimientoDTO[]> {
     return this.listarMovimientosTurnoUC.ejecutar(idTurno, solicitante);
+  }
+
+  async anularMovimiento(
+    input: AnularMovimientoInput,
+  ): Promise<AnularMovimientoResultadoDTO> {
+    return this.anularMovimientoUC.ejecutar(input);
   }
 }

@@ -1,7 +1,12 @@
-import { MontoInvalidoError } from '../errors/DominioError.js';
+import {
+  MontoInvalidoError,
+  MovimientoNoEncontradoError,
+} from '../errors/DominioError.js';
 import type { CodigoEstadoTurno, EstadoTurno } from '../state/EstadoTurno.js';
 import { Dinero } from '../value-objects/Dinero.js';
 import type { MetodoPago } from './MetodoPago.js';
+import type { MovimientoCaja } from './MovimientoCaja.js';
+import type { Usuario } from './Usuario.js';
 
 export interface TurnoCajaProps {
   idTurno: string;
@@ -51,6 +56,19 @@ export class TurnoCaja {
 
   validarOperacion(): void {
     this.estado.validarOperacion();
+  }
+
+  anularMovimiento(
+    movimiento: MovimientoCaja,
+    motivo: string,
+    encargado: Usuario,
+  ): void {
+    if (movimiento.idTurno !== this.idTurno) {
+      throw new MovimientoNoEncontradoError(
+        'El movimiento indicado no pertenece a este turno de caja.',
+      );
+    }
+    this.estado.anularMovimiento(this, movimiento, motivo, encargado);
   }
 
   cambiarEstado(nuevoEstado: EstadoTurno): void {

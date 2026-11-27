@@ -97,6 +97,38 @@ export class MetodoPagoInvalidoError extends DominioError {
   }
 }
 
+/** Se lanza cuando el movimiento solicitado no existe. */
+export class MovimientoNoEncontradoError extends DominioError {
+  readonly codigo = 'MOVIMIENTO_NO_ENCONTRADO';
+  readonly statusHttp = 404;
+
+  constructor(mensaje = 'El movimiento de caja solicitado no existe.') {
+    super(mensaje);
+  }
+}
+
+/** Se lanza si se intenta anular un movimiento ya anulado previamente (RN-01). */
+export class MovimientoYaAnuladoError extends DominioError {
+  readonly codigo = 'MOVIMIENTO_YA_ANULADO';
+  readonly statusHttp = 409;
+
+  constructor(mensaje = 'Este movimiento ya fue anulado previamente (RN-01).') {
+    super(mensaje);
+  }
+}
+
+/** Se lanza al intentar anular sin ingresar un motivo válido (RN-01). */
+export class MotivoAnulacionObligatorioError extends DominioError {
+  readonly codigo = 'MOTIVO_ANULACION_OBLIGATORIO';
+  readonly statusHttp = 400;
+
+  constructor(
+    mensaje = 'Debés ingresar un motivo obligatorio de al menos 3 caracteres para anular el movimiento (RN-01).',
+  ) {
+    super(mensaje);
+  }
+}
+
 /** Se lanza ante acciones restringidas al rol ENCARGADO (RN-08). */
 export class RolNoAutorizadoError extends DominioError {
   readonly codigo = 'ROL_NO_AUTORIZADO';
