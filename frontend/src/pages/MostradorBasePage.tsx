@@ -12,6 +12,7 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { AppLayout } from '../components/AppLayout';
 import { CargaRapidaCard } from '../components/CargaRapidaCard';
 import { LibroDiarioTable } from '../components/LibroDiarioTable';
+import { ModalAnulacion } from '../components/ModalAnulacion';
 import { useAuth } from '../context/AuthContext';
 import { formatearHoraArgentina, formatearPesos } from '../lib/formatMoney';
 import {
@@ -76,6 +77,8 @@ export function MostradorBasePage() {
   const [cargandoMovs, setCargandoMovs] = useState(
     Boolean(idTurnoActual) && !movsCache,
   );
+  const [movimientoAAnular, setMovimientoAAnular] =
+    useState<MovimientoCaja | null>(null);
 
   useEffect(() => {
     if (!idTurno) {
@@ -158,6 +161,30 @@ export function MostradorBasePage() {
     }
   }
 
+  function manejarMovimientoAnulado(
+    movimientoAnulado: MovimientoCaja,
+    turnoActualizado: TurnoActivo,
+    movimientoReemplazo: MovimientoCaja | null,
+  ) {
+    setMovimientos((prev) => {
+      const actualizados = prev.map((m) =>
+        m.id_movimiento === movimientoAnulado.id_movimiento
+          ? movimientoAnulado
+          : m,
+      );
+      return movimientoReemplazo
+        ? [movimientoReemplazo, ...actualizados]
+        : actualizados;
+    });
+    if (esSupervision) {
+      setTurnoSupervisado(turnoActualizado);
+    }
+    if (turnoActivo && turnoActivo.id_turno === turnoActualizado.id_turno) {
+      setTurnoActivo(turnoActualizado);
+    }
+    setMovimientoAAnular(null);
+  }
+
   if (cargandoTurno) {
     return (
       <AppLayout>
@@ -191,6 +218,10 @@ export function MostradorBasePage() {
       </AppLayout>
     );
   }
+
+  const puedeAnular =
+    usuario?.rol_usuario === 'ENCARGADO' &&
+    turnoMostrado.estado_turno === 'ABIERTO';
 
   return (
     <AppLayout>
@@ -303,10 +334,20 @@ export function MostradorBasePage() {
             <LibroDiarioTable
               movimientos={movimientos}
               cargando={cargandoMovs}
+              puedeAnular={puedeAnular}
+              onSolicitarAnulacion={setMovimientoAAnular}
             />
           </div>
         </section>
       </div>
+
+      {movimientoAAnular && (
+        <ModalAnulacion
+          movimiento={movimientoAAnular}
+          onCerrar={() => setMovimientoAAnular(null)}
+          onAnulado={manejarMovimientoAnulado}
+        />
+      )}
     </AppLayout>
   );
 }

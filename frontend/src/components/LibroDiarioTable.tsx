@@ -5,6 +5,8 @@ import type { MovimientoCaja } from '../services/api';
 interface LibroDiarioTableProps {
   movimientos: MovimientoCaja[];
   cargando: boolean;
+  puedeAnular?: boolean;
+  onSolicitarAnulacion?: (movimiento: MovimientoCaja) => void;
 }
 
 function etiquetaMetodo(codigo: string): string {
@@ -46,6 +48,8 @@ function badgeOrigen(mov: MovimientoCaja) {
 export function LibroDiarioTable({
   movimientos,
   cargando,
+  puedeAnular = false,
+  onSolicitarAnulacion,
 }: LibroDiarioTableProps) {
   const activos = movimientos.filter(
     (m) => m.estado_movimiento === 'ACTIVO',
@@ -86,14 +90,23 @@ export function LibroDiarioTable({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <div className="min-w-[540px] space-y-2">
+          <div
+            className={`${puedeAnular ? 'min-w-[600px]' : 'min-w-[520px]'} space-y-2`}
+          >
             {/* Encabezados */}
-            <div className="grid grid-cols-12 gap-2 px-3.5 py-2 rounded-lg bg-slate-50 text-[10px] font-bold tracking-wider uppercase text-slate-500">
-              <div className="col-span-2">HORA</div>
-              <div className="col-span-4">CONCEPTO</div>
-              <div className="col-span-2">MÉTODO</div>
-              <div className="col-span-2">ORIGEN</div>
-              <div className="col-span-2 text-right">IMPORTE</div>
+            <div
+              className={`grid ${
+                puedeAnular
+                  ? 'grid-cols-[52px_minmax(120px,1fr)_78px_76px_minmax(112px,auto)_78px]'
+                  : 'grid-cols-[52px_minmax(140px,1fr)_86px_80px_minmax(116px,auto)]'
+              } gap-3 px-3.5 py-2 rounded-lg bg-slate-50 text-[10px] font-bold tracking-wider uppercase text-slate-500`}
+            >
+              <div>HORA</div>
+              <div>CONCEPTO</div>
+              <div>MÉTODO</div>
+              <div>ORIGEN</div>
+              <div className="text-right whitespace-nowrap">IMPORTE</div>
+              {puedeAnular && <div className="text-right pl-2">ACCIÓN</div>}
             </div>
 
             {/* Filas */}
@@ -101,21 +114,27 @@ export function LibroDiarioTable({
               {movimientos.map((mov) => {
                 const anulado = mov.estado_movimiento === 'ANULADO';
                 const esIngreso = mov.tipo_movimiento === 'INGRESO';
+                const nombreAnulador =
+                  mov.usuario_anulacion?.nombre_completo.split(' ')[0] ?? '';
 
                 return (
                   <div
                     key={mov.id_movimiento}
-                    className={`grid grid-cols-12 gap-2 items-center rounded-xl border px-3.5 py-3 text-sm transition-colors ${
+                    className={`grid ${
+                      puedeAnular
+                        ? 'grid-cols-[52px_minmax(120px,1fr)_78px_76px_minmax(112px,auto)_78px]'
+                        : 'grid-cols-[52px_minmax(140px,1fr)_86px_80px_minmax(116px,auto)]'
+                    } gap-3 items-center rounded-xl border px-3.5 py-3 text-sm transition-colors ${
                       anulado
                         ? 'border-slate-200 bg-slate-50/90 text-slate-400'
                         : 'border-slate-200/80 bg-white hover:border-slate-300'
                     }`}
                   >
-                    <div className="col-span-2 font-mono text-xs text-slate-500 tabular-nums">
+                    <div className="font-mono text-xs text-slate-500 tabular-nums">
                       {formatearHoraArgentina(mov.fecha_hora_registro)}
                     </div>
 
-                    <div className="col-span-4 min-w-0">
+                    <div className="min-w-0">
                       <p
                         className={`truncate font-semibold ${
                           anulado
@@ -127,20 +146,23 @@ export function LibroDiarioTable({
                           (esIngreso ? 'Venta mostrador' : 'Egreso')}
                       </p>
                       {anulado && mov.motivo_anulacion && (
-                        <p className="truncate text-[11px] text-slate-500">
+                        <p
+                          className="truncate text-[11px] text-slate-500"
+                          title={`Motivo: ${mov.motivo_anulacion}`}
+                        >
                           Motivo: {mov.motivo_anulacion}
                         </p>
                       )}
                     </div>
 
-                    <div className="col-span-2 text-xs font-medium text-slate-600">
+                    <div className="text-xs font-medium text-slate-600">
                       {etiquetaMetodo(mov.metodo_pago.codigo_metodo)}
                     </div>
 
-                    <div className="col-span-2">{badgeOrigen(mov)}</div>
+                    <div>{badgeOrigen(mov)}</div>
 
                     <div
-                      className={`col-span-2 text-right font-mono text-sm font-bold tabular-nums ${
+                      className={`text-right font-mono text-sm font-bold tabular-nums whitespace-nowrap ${
                         anulado
                           ? 'line-through text-slate-400'
                           : esIngreso
@@ -151,6 +173,31 @@ export function LibroDiarioTable({
                       {esIngreso ? '+' : '-'}
                       {formatearPesos(mov.monto_operacion).replace('$ ', '$')}
                     </div>
+
+                    {puedeAnular && (
+                      <div className="flex justify-end pl-2 shrink-0">
+                        {anulado ? (
+                          <span
+                            className="text-[11px] font-medium text-slate-400 truncate"
+                            title={
+                              mov.fecha_hora_anulacion
+                                ? `Anulado por ${mov.usuario_anulacion?.nombre_completo ?? ''} a las ${formatearHoraArgentina(mov.fecha_hora_anulacion)}`
+                                : undefined
+                            }
+                          >
+                            {nombreAnulador}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => onSolicitarAnulacion?.(mov)}
+                            className="shrink-0 rounded-lg bg-rose-50 hover:bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-600 transition-colors cursor-pointer"
+                          >
+                            Anular
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}

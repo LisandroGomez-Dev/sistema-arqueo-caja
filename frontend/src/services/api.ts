@@ -357,3 +357,49 @@ export async function registrarMovimientoTurno(
 
   return data;
 }
+
+export interface ReemplazoMovimientoPayload {
+  tipo_movimiento?: TipoMovimiento;
+  codigo_metodo_pago?: CodigoMetodoPago;
+  monto_operacion: string;
+  concepto_descripcion?: string | null;
+}
+
+export async function anularMovimientoTurno(
+  idMovimiento: string,
+  motivoAnulacion: string,
+  reemplazo?: ReemplazoMovimientoPayload | null,
+): Promise<{
+  movimiento: MovimientoCaja;
+  movimiento_reemplazo: MovimientoCaja | null;
+  turno: TurnoActivo;
+}> {
+  const data = await request<{
+    movimiento: MovimientoCaja;
+    movimiento_reemplazo: MovimientoCaja | null;
+    turno: TurnoActivo;
+  }>(`/movimientos/${idMovimiento}/anular`, {
+    method: 'PATCH',
+    body: {
+      motivo_anulacion: motivoAnulacion,
+      ...(reemplazo ? { reemplazo } : {}),
+    },
+  });
+
+  const idTurno = data.turno.id_turno;
+  escribirCache(`GET:/turnos/${idTurno}`, { turno: data.turno });
+  const prevMovs = obtenerMovimientosEnCache(idTurno);
+  if (prevMovs) {
+    const actualizados = prevMovs.map((m) =>
+      m.id_movimiento === data.movimiento.id_movimiento ? data.movimiento : m,
+    );
+    escribirCache(`GET:/turnos/${idTurno}/movimientos`, {
+      movimientos: data.movimiento_reemplazo
+        ? [data.movimiento_reemplazo, ...actualizados]
+        : actualizados,
+    });
+  }
+  cacheDatos.delete('GET:/turnos/activos');
+
+  return data;
+}
