@@ -1,0 +1,71 @@
+import type { PrismaClient } from '@prisma/client';
+import type { OperadorPublicoDTO } from '../../application/dto/TurnoActivoDTO.js';
+import type {
+  UsuarioConHash,
+  UsuarioRepositoryPort,
+} from '../../application/ports/out/UsuarioRepositoryPort.js';
+import { Usuario } from '../../domain/entities/Usuario.js';
+
+export class PrismaUsuarioRepository implements UsuarioRepositoryPort {
+  constructor(private readonly prisma: PrismaClient) {}
+
+  async listarActivos(): Promise<OperadorPublicoDTO[]> {
+    const usuarios = await this.prisma.usuario.findMany({
+      where: { esta_activo: true },
+      orderBy: [{ rol_usuario: 'asc' }, { nombre_completo: 'asc' }],
+      select: {
+        id_usuario: true,
+        nombre_completo: true,
+        rol_usuario: true,
+      },
+    });
+
+    return usuarios;
+  }
+
+  async buscarPorId(idUsuario: string): Promise<Usuario | null> {
+    const row = await this.prisma.usuario.findUnique({
+      where: { id_usuario: idUsuario },
+      select: {
+        id_usuario: true,
+        nombre_completo: true,
+        rol_usuario: true,
+        esta_activo: true,
+        fecha_alta: true,
+      },
+    });
+
+    if (!row) {
+      return null;
+    }
+
+    return new Usuario({
+      idUsuario: row.id_usuario,
+      nombreCompleto: row.nombre_completo,
+      rolUsuario: row.rol_usuario,
+      estaActivo: row.esta_activo,
+      fechaAlta: row.fecha_alta,
+    });
+  }
+
+  async buscarPorIdConHash(idUsuario: string): Promise<UsuarioConHash | null> {
+    const row = await this.prisma.usuario.findUnique({
+      where: { id_usuario: idUsuario },
+    });
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      usuario: new Usuario({
+        idUsuario: row.id_usuario,
+        nombreCompleto: row.nombre_completo,
+        rolUsuario: row.rol_usuario,
+        estaActivo: row.esta_activo,
+        fechaAlta: row.fecha_alta,
+      }),
+      pinAccesoHash: row.pin_acceso_hash,
+    };
+  }
+}
