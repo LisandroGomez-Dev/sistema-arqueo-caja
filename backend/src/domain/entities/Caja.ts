@@ -20,4 +20,12 @@ export class Caja {
     this.nombreCaja = props.nombreCaja;
     this.estaActiva = props.estaActiva;
   }
+
+  estaHabilitada(): boolean {
+    return this.estaActiva;
+  }
+
+  obtenerEtiqueta(): string {
+    return `Caja #${this.numeroCaja} — ${this.nombreCaja}`;
+  }
 }

@@ -176,6 +176,7 @@ Partes de novedades y contingencias reportadas durante cualquier turno (mañana,
 | :--- | :---: | :--- | :--- |
 | `usuarios` | `1 : N` | `configuracion_caja` | Actualiza la regla de redondeo vigente (`id_usuario_actualizacion`). |
 | `usuarios` | `1 : N` | `turnos_caja` | Abre turnos de caja (`id_usuario_apertura`). |
+| `cajas` | `1 : N` | `turnos_caja` | Asocia cada turno a su terminal física de cobro (`id_caja`). |
 | `usuarios` | `1 : N` | `movimientos_caja` | Registra (`id_usuario_registro`) o anula (`id_usuario_anulacion`) movimientos. |
 | `usuarios` | `1 : N` | `arqueos_cierre` | Confirma el arqueo y cierre (`id_usuario_cierre`). |
 | `usuarios` | `1 : N` | `incidencias_turno` | Reporta (`id_usuario_reporte`) o resuelve (`id_usuario_resolucion`) incidencias. |
@@ -196,7 +197,7 @@ Partes de novedades y contingencias reportadas durante cualquier turno (mañana,
 | **RN-02** | `movimientos_caja.id_metodo_pago`, `turnos_caja.fondo_inicial_efectivo`, `detalle_arqueo_metodo`. |
 | **RN-03** | `metodos_pago.permite_redondeo` (`FALSE` para digitales) y `detalle_arqueo_metodo.ajuste_redondeo = 0.00`. |
 | **RN-04** | `configuracion_caja.multiplo_redondeo_efectivo` + foto histórica en `arqueos_cierre.multiplo_redondeo_aplicado`. |
-| **RN-05** | `turnos_caja.estado_turno` (restricción de aplicación/índice parcial: máximo 1 turno `ABIERTO`) y `fecha_hora_cierre`. |
+| **RN-05** | `cajas`, `turnos_caja.id_caja`, `turnos_caja.estado_turno` (doble índice único parcial: `uniq_turno_abierto_por_caja` y `uniq_turno_abierto_por_usuario`) y `fecha_hora_cierre`. |
 | **RN-06** | Tipos `DECIMAL(12,2)`, `CHECK (monto_operacion > 0)`, `CHECK (fondo_inicial_efectivo >= 0)`, `concepto_descripcion`. |
 | **RN-07** | Columnas determinísticas en `arqueos_cierre` y `detalle_arqueo_metodo` (`monto_esperado`, `monto_declarado`, `ajuste_redondeo`, `diferencia_real`). |
 | **RN-08** | `usuarios.rol_usuario` + trazabilidad por FK en cada tabla crítica. |
