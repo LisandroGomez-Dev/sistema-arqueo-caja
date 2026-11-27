@@ -140,9 +140,13 @@ Todos los endpoints protegidos requieren token JWT en `Authorization: Bearer <to
 
 | Método | Endpoint | Rol Permitido | Caso de Uso / Issue | Descripción |
 | :--- | :--- | :---: | :--- | :--- |
-| `POST` | `/api/v1/auth/login` | Público | Autenticación | Login rápido por usuario + PIN; devuelve JWT con `id_usuario` y `rol_usuario`. |
-| `GET` | `/api/v1/turnos/activo` | `CAJERO`, `ENCARGADO` | `CU-AbrirCaja` (`#2`) | Devuelve el turno `ABIERTO` actual (o `null`) con subtotales en vivo por método. |
-| `POST` | `/api/v1/turnos/abrir` | `CAJERO`, `ENCARGADO` | `CU-AbrirCaja` (`#2`) | Abre un nuevo turno con `fondo_inicial_efectivo >= 0`, validando unicidad (`RN-05`). |
+| `GET` | `/api/v1/auth/operadores` | Público | Autenticación (`#2`) | Lista operadores activos (sin `pin_acceso_hash`) y configuración pública del comercio. |
+| `POST` | `/api/v1/auth/login` | Público | Autenticación (`#2`) | Login rápido por usuario + PIN; devuelve JWT con `id_usuario` y `rol_usuario`. |
+| `GET` | `/api/v1/cajas` | `CAJERO`, `ENCARGADO` | `CU-AbrirCaja` (`#2`) | Lista cajas físicas activas y su estado en tiempo real (`LIBRE` / `OCUPADA`). |
+| `GET` | `/api/v1/turnos/activo` | `CAJERO`, `ENCARGADO` | `CU-AbrirCaja` (`#2`) | Devuelve el turno `ABIERTO` del operador autenticado (o `null`) con subtotales por método. |
+| `GET` | `/api/v1/turnos/activos` | **`ENCARGADO`** | Supervisión Multi-Caja (`#2`) | Devuelve todos los turnos `ABIERTO` del local y la grilla en vivo de todas las cajas (`RN-08`). |
+| `GET` | `/api/v1/turnos/:idTurno` | `CAJERO`, `ENCARGADO` | `CU-AbrirCaja` (`#2`) | Devuelve el detalle de un turno (cajero solo el suyo; encargado cualquier caja). |
+| `POST` | `/api/v1/turnos/abrir` | `CAJERO`, `ENCARGADO` | `CU-AbrirCaja` (`#2`) | Abre turno en una `id_caja` libre con `fondo_inicial_efectivo >= 0`, validando doble unicidad (`RN-05`). |
 | `POST` | `/api/v1/turnos/:idTurno/movimientos` | `CAJERO`, `ENCARGADO` | `CU-RegistrarMovimiento` (`#3`) | Registra un `INGRESO` o `EGRESO` (`monto_operacion > 0`, `origen_carga`). |
 | `PATCH` | `/api/v1/movimientos/:idMovimiento/anular` | **`ENCARGADO`** | `CU-AnularMovimiento` (`#4`) | Ejecuta anulación lógica (`ANULADO`) exigiendo `motivo_anulacion` (`RN-01`, `RN-08`). |
 | `GET` | `/api/v1/configuracion/caja` | `CAJERO`, `ENCARGADO` | `CU-ConfigurarRedondeo` (`#5`) | Consulta el `multiplo_redondeo_efectivo` vigente. |
@@ -204,10 +208,14 @@ Disponible para **todos los turnos (mañana, tarde y noche)** dentro del panel d
 
 ## 9. Garantías Técnicas de Integridad y Concurrencia
 
-1. **Unicidad de turno abierto a nivel base de datos (`RN-05`):** además de la validación en el dominio, PostgreSQL aplica un índice único parcial que impide condiciones de carrera por doble clic:
+1. **Unicidad multi-caja a nivel base de datos (`RN-05`):** además de la validación en el dominio, PostgreSQL aplica doble índice único parcial que impide condiciones de carrera por doble clic o apertura simultánea:
    ```sql
-   CREATE UNIQUE INDEX uniq_unico_turno_abierto
-   ON turnos_caja (estado_turno)
+   CREATE UNIQUE INDEX uniq_turno_abierto_por_caja
+   ON turnos_caja (id_caja)
+   WHERE estado_turno = 'ABIERTO';
+
+   CREATE UNIQUE INDEX uniq_turno_abierto_por_usuario
+   ON turnos_caja (id_usuario_apertura)
    WHERE estado_turno = 'ABIERTO';
    ```
 2. **Cierre atómico (`RN-05`, `RN-07`):** `CerrarTurnoUseCase` ejecuta en una única transacción (`prisma.$transaction`) la lectura con bloqueo del turno, la inserción en `arqueos_cierre` + `detalle_arqueo_metodo` y la actualización de `turnos_caja.estado_turno = 'CERRADO'`.

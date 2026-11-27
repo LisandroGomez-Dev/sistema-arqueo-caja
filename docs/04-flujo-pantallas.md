@@ -80,9 +80,9 @@ flowchart TD
 
 ---
 
-### P2 · Apertura de Caja (`/apertura`) — *Issue `#2`*
-- **Actores:** `CAJERO` / `ENCARGADO`.
-- **Reglas visibles:** Valida que no exista otro turno `ABIERTO` (`RN-05`) y `fondo_inicial_efectivo >= 0` (`RN-06`). Aclara explícitamente que el fondo inicial aplica solo a `EFECTIVO` (`RN-02`).
+### P2 · Apertura de Caja (`/apertura`) — *Issue `#2` (Multi-Caja)*
+- **Actores:** `CAJERO` / `ENCARGADO` (cuando cubre una caja).
+- **Reglas visibles:** Permite elegir una **caja física libre** (`Caja #1`, `Caja #2`... mostrando en vivo cuáles están `LIBRES` y cuáles `OCUPADAS` con su cajero) y valida `fondo_inicial_efectivo >= 0` (`RN-06`) y doble unicidad (`RN-05`). Aclara explícitamente que el fondo inicial aplica solo a `EFECTIVO` (`RN-02`).
 
 ```text
 ┌────────────────────────────────────┐

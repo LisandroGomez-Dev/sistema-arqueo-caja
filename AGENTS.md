@@ -34,16 +34,17 @@ Respetar estrictamente la separación de carpetas en `backend/src/`:
 - `application/`: **Facade** (`CajaFacade`), casos de uso, DTOs (`BorradorMovimiento`, `DiagnosticoGuardia`) y puertos `ports/out/` (incluyendo `CopilotoIA`).
 - `infrastructure/`: adaptadores `http/` (Fastify + Zod + JWT + RoleGuard), `persistence/` (Prisma) y `ai/` (**Adapter:** `AdaptadorGeminiIA`).
 
-### 3.2 Modelo de Datos Exacto (8 Tablas en Español — 3FN)
+### 3.2 Modelo de Datos Exacto (9 Tablas en Español — 3FN · Multi-Caja)
 Usar exactamente los nombres de tablas y columnas definidos en `docs/02-modelo-datos.md` (**no traducir al inglés ni agregar tablas fuera del DER**):
 1. `usuarios`
 2. `configuracion_caja`
 3. `metodos_pago`
-4. `turnos_caja` *(con índice único parcial PostgreSQL `WHERE estado_turno = 'ABIERTO'` para garantizar `RN-05`)*
-5. `movimientos_caja`
-6. `arqueos_cierre`
-7. `detalle_arqueo_metodo`
-8. `incidencias_turno`
+4. `cajas` *(terminales físicas de cobro del local: `Caja 1`, `Caja 2`, ..., `Caja N`)*
+5. `turnos_caja` *(con FK `id_caja` + doble índice único parcial PostgreSQL para `RN-05`: `uniq_turno_abierto_por_caja` y `uniq_turno_abierto_por_usuario`)*
+6. `movimientos_caja`
+7. `arqueos_cierre`
+8. `detalle_arqueo_metodo`
+9. `incidencias_turno`
 
 ### 3.3 Precisión Monetaria (`RNF-01`, `RN-06`)
 - **Prohibido usar `number` / `float` / `DOUBLE`** para cálculos monetarios.

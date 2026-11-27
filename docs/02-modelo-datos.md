@@ -27,7 +27,7 @@ El modelo relacional fue diseñado en **Tercera Forma Normal (3FN)** respetando 
 
 ---
 
-## 3. Diccionario de Datos (8 Entidades)
+## 3. Diccionario de Datos (9 Entidades — Multi-Caja)
 
 ### 3.1 `usuarios`
 Almacena los operadores habilitados para autenticarse y operar según su rol (`RN-08`).
@@ -69,15 +69,28 @@ Catálogo de canales de cobro y pago habilitados en el mostrador (`RN-02` / `RN-
 
 ---
 
-### 3.4 `turnos_caja`
-Representa cada sesión o turno laboral de caja desde la apertura con fondo inicial hasta su cierre definitivo (`RN-05`).
+### 3.4 `cajas` *(Multi-Caja · modelo supermercado / FACOR)*
+Catálogo de terminales físicas de cobro habilitadas en la sucursal (`RN-05`).
+
+| Atributo | Tipo de Dato | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| `id_caja` | `VARCHAR(36)` | **PK**, `NOT NULL` | Identificador único UUID de la caja física. |
+| `numero_caja` | `INTEGER` | `UNIQUE`, `NOT NULL`, `CHECK (> 0)` | Número visible de caja en línea de cobro (`1`, `2`, `3`...). |
+| `nombre_caja` | `VARCHAR(60)` | `NOT NULL` | Etiqueta operativa (ej. `Caja 1 — Línea Principal`, `Caja 3 — Rápida`). |
+| `esta_activa` | `BOOLEAN` | `NOT NULL`, `DEFAULT TRUE` | Indica si la terminal está habilitada para abrir turnos. |
+
+---
+
+### 3.5 `turnos_caja`
+Representa cada sesión o turno laboral de una caja física desde la apertura con fondo inicial hasta su cierre definitivo (`RN-05`).
 
 | Atributo | Tipo de Dato | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
 | `id_turno` | `VARCHAR(36)` | **PK**, `NOT NULL` | Identificador único del turno de caja. |
+| `id_caja` | `VARCHAR(36)` | **FK** → `cajas(id_caja)`, `NOT NULL` | Terminal física en la que se abre el turno (`RN-05`). |
 | `id_usuario_apertura` | `VARCHAR(36)` | **FK** → `usuarios(id_usuario)`, `NOT NULL` | Usuario que realizó la apertura del turno. |
 | `fondo_inicial_efectivo` | `DECIMAL(12,2)` | `NOT NULL`, `CHECK (>= 0)` | Dinero de cambio inicial declarado en efectivo (`RN-02` / `RN-06`). |
-| `estado_turno` | `ENUM('ABIERTO', 'CERRADO')` | `NOT NULL` | Estado del ciclo de vida. Solo puede existir un turno `ABIERTO` a la vez (`RN-05`). |
+| `estado_turno` | `ENUM('ABIERTO', 'CERRADO')` | `NOT NULL` | Estado del ciclo de vida. Máximo 1 `ABIERTO` por caja y por usuario (`RN-05`). |
 | `fecha_hora_apertura` | `DATETIME(6)` | `NOT NULL` | Marca temporal exacta de inicio del turno. |
 | `fecha_hora_cierre` | `DATETIME(6)` | `NULL` | Marca temporal de cierre definitivo (`NULL` mientras esté `ABIERTO`). |
 
