@@ -73,6 +73,30 @@ export class MontoInvalidoError extends DominioError {
   readonly statusHttp = 400;
 }
 
+/** Se lanza al registrar un EGRESO sin concepto/descripción (RN-06). */
+export class ConceptoObligatorioError extends DominioError {
+  readonly codigo = 'CONCEPTO_OBLIGATORIO';
+  readonly statusHttp = 400;
+
+  constructor(
+    mensaje = 'Todo egreso requiere especificar un concepto o motivo obligatorio (RN-06).',
+  ) {
+    super(mensaje);
+  }
+}
+
+/** Se lanza cuando el método de pago no existe o no está activo (RN-02). */
+export class MetodoPagoInvalidoError extends DominioError {
+  readonly codigo = 'METODO_PAGO_INVALIDO';
+  readonly statusHttp = 400;
+
+  constructor(
+    mensaje = 'El método de pago seleccionado no existe o no está habilitado (RN-02).',
+  ) {
+    super(mensaje);
+  }
+}
+
 /** Se lanza ante acciones restringidas al rol ENCARGADO (RN-08). */
 export class RolNoAutorizadoError extends DominioError {
   readonly codigo = 'ROL_NO_AUTORIZADO';

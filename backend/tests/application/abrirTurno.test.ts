@@ -6,22 +6,12 @@ import {
   TurnoYaAbiertoError,
 } from '../../src/domain/errors/DominioError.js';
 import {
-  InMemoryCajaRepository,
-  InMemoryConfiguracionRepository,
-  InMemoryPinHasher,
-  InMemoryTurnoRepository,
-  InMemoryUsuarioRepository,
+  crearContextoEnMemoria,
   TEST_IDS,
 } from '../helpers/inMemoryAdapters.js';
 
 function crearFacade() {
-  const usuarioRepo = new InMemoryUsuarioRepository();
-  const configRepo = new InMemoryConfiguracionRepository();
-  const cajaRepo = new InMemoryCajaRepository();
-  const turnoRepo = new InMemoryTurnoRepository(usuarioRepo, cajaRepo, configRepo);
-  cajaRepo.vincularTurnoRepo(turnoRepo);
-  const pinHasher = new InMemoryPinHasher();
-  return new CajaFacade({ turnoRepo, usuarioRepo, cajaRepo, configRepo, pinHasher });
+  return new CajaFacade(crearContextoEnMemoria());
 }
 
 describe('CajaFacade · Apertura Multi-Caja (Issue #2 · RN-02, RN-05, RN-06)', () => {

@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import type { MovimientoDTO } from '../../src/application/dto/MovimientoDTO.js';
 import type {
   CajaConEstadoDTO,
   ConfiguracionPublicaDTO,
@@ -10,6 +11,8 @@ import type {
   ConfiguracionCajaActual,
   ConfiguracionRepositoryPort,
 } from '../../src/application/ports/out/ConfiguracionRepositoryPort.js';
+import type { MetodoPagoRepositoryPort } from '../../src/application/ports/out/MetodoPagoRepositoryPort.js';
+import type { MovimientoRepositoryPort } from '../../src/application/ports/out/MovimientoRepositoryPort.js';
 import type { PinHasherPort } from '../../src/application/ports/out/PinHasherPort.js';
 import type { TurnoRepositoryPort } from '../../src/application/ports/out/TurnoRepositoryPort.js';
 import type {
@@ -18,6 +21,7 @@ import type {
 } from '../../src/application/ports/out/UsuarioRepositoryPort.js';
 import { Caja } from '../../src/domain/entities/Caja.js';
 import { MetodoPago } from '../../src/domain/entities/MetodoPago.js';
+import type { MovimientoCaja } from '../../src/domain/entities/MovimientoCaja.js';
 import type { TurnoCaja } from '../../src/domain/entities/TurnoCaja.js';
 import { Usuario } from '../../src/domain/entities/Usuario.js';
 import {
@@ -115,6 +119,117 @@ export class InMemoryConfiguracionRepository
   }
 }
 
+export class InMemoryMetodoPagoRepository implements MetodoPagoRepositoryPort {
+  readonly metodos: MetodoPago[] = [
+    new MetodoPago({
+      idMetodoPago: '44444444-4444-4444-8444-444444444441',
+      codigoMetodo: 'EFECTIVO',
+      nombreMetodo: 'Efectivo',
+      permiteRedondeo: true,
+      estaActivo: true,
+    }),
+    new MetodoPago({
+      idMetodoPago: '44444444-4444-4444-8444-444444444442',
+      codigoMetodo: 'QR_TRANSFERENCIA',
+      nombreMetodo: 'QR / Transferencia',
+      permiteRedondeo: false,
+      estaActivo: true,
+    }),
+    new MetodoPago({
+      idMetodoPago: '44444444-4444-4444-8444-444444444443',
+      codigoMetodo: 'TARJETA',
+      nombreMetodo: 'Tarjeta Débito / Crédito',
+      permiteRedondeo: false,
+      estaActivo: true,
+    }),
+  ];
+
+  async buscarActivoPorCodigo(codigoMetodo: string): Promise<MetodoPago | null> {
+    return (
+      this.metodos.find(
+        (m) =>
+          m.estaActivo &&
+          m.codigoMetodo.toUpperCase() === codigoMetodo.trim().toUpperCase(),
+      ) ?? null
+    );
+  }
+
+  buscarPorId(idMetodoPago: string): MetodoPago | undefined {
+    return this.metodos.find((m) => m.idMetodoPago === idMetodoPago);
+  }
+}
+
+export class InMemoryMovimientoRepository implements MovimientoRepositoryPort {
+  readonly movimientos: MovimientoCaja[] = [];
+
+  constructor(
+    private readonly metodoPagoRepo: InMemoryMetodoPagoRepository,
+    private readonly usuarioRepo: UsuarioRepositoryPort,
+  ) {}
+
+  private async aDTO(m: MovimientoCaja): Promise<MovimientoDTO> {
+    const metodo = this.metodoPagoRepo.buscarPorId(m.idMetodoPago)!;
+    const usuarioReg = (await this.usuarioRepo.buscarPorId(m.idUsuarioRegistro))!;
+    const usuarioAnul = m.idUsuarioAnulacion
+      ? await this.usuarioRepo.buscarPorId(m.idUsuarioAnulacion)
+      : null;
+
+    return {
+      id_movimiento: m.idMovimiento,
+      id_turno: m.idTurno,
+      tipo_movimiento: m.tipoMovimiento,
+      monto_operacion: m.montoOperacion.aString(),
+      concepto_descripcion: m.conceptoDescripcion,
+      origen_carga: m.origenCarga,
+      url_comprobante: m.urlComprobante,
+      estado_movimiento: m.estadoMovimiento,
+      motivo_anulacion: m.motivoAnulacion,
+      fecha_hora_anulacion: m.fechaHoraAnulacion
+        ? m.fechaHoraAnulacion.toISOString()
+        : null,
+      fecha_hora_registro: m.fechaHoraRegistro.toISOString(),
+      metodo_pago: {
+        id_metodo_pago: metodo.idMetodoPago,
+        codigo_metodo: metodo.codigoMetodo,
+        nombre_metodo: metodo.nombreMetodo,
+      },
+      usuario_registro: {
+        id_usuario: usuarioReg.idUsuario,
+        nombre_completo: usuarioReg.nombreCompleto,
+        rol_usuario: usuarioReg.rolUsuario,
+      },
+      usuario_anulacion: usuarioAnul
+        ? {
+            id_usuario: usuarioAnul.idUsuario,
+            nombre_completo: usuarioAnul.nombreCompleto,
+            rol_usuario: usuarioAnul.rolUsuario,
+          }
+        : null,
+    };
+  }
+
+  async guardar(movimiento: MovimientoCaja): Promise<MovimientoDTO> {
+    this.movimientos.push(movimiento);
+    return this.aDTO(movimiento);
+  }
+
+  async listarPorTurno(idTurno: string): Promise<MovimientoDTO[]> {
+    const filtrados = this.movimientos
+      .filter((m) => m.idTurno === idTurno)
+      .sort(
+        (a, b) =>
+          b.fechaHoraRegistro.getTime() - a.fechaHoraRegistro.getTime(),
+      );
+    return Promise.all(filtrados.map((m) => this.aDTO(m)));
+  }
+
+  obtenerEntidadesActivasPorTurno(idTurno: string): MovimientoCaja[] {
+    return this.movimientos.filter(
+      (m) => m.idTurno === idTurno && m.estaActivo(),
+    );
+  }
+}
+
 export class InMemoryCajaRepository implements CajaRepositoryPort {
   private readonly cajas: Caja[] = [
     new Caja({
@@ -181,35 +296,14 @@ export class InMemoryCajaRepository implements CajaRepositoryPort {
 }
 
 export class InMemoryTurnoRepository implements TurnoRepositoryPort {
-  private readonly turnos: TurnoCaja[] = [];
-  private readonly metodos: MetodoPago[] = [
-    new MetodoPago({
-      idMetodoPago: '44444444-4444-4444-8444-444444444441',
-      codigoMetodo: 'EFECTIVO',
-      nombreMetodo: 'Efectivo',
-      permiteRedondeo: true,
-      estaActivo: true,
-    }),
-    new MetodoPago({
-      idMetodoPago: '44444444-4444-4444-8444-444444444442',
-      codigoMetodo: 'QR_TRANSFERENCIA',
-      nombreMetodo: 'QR / Transferencia',
-      permiteRedondeo: false,
-      estaActivo: true,
-    }),
-    new MetodoPago({
-      idMetodoPago: '44444444-4444-4444-8444-444444444443',
-      codigoMetodo: 'TARJETA',
-      nombreMetodo: 'Tarjeta Débito / Crédito',
-      permiteRedondeo: false,
-      estaActivo: true,
-    }),
-  ];
+  readonly turnos: TurnoCaja[] = [];
 
   constructor(
     private readonly usuarioRepo: UsuarioRepositoryPort,
     private readonly cajaRepo: CajaRepositoryPort,
     private readonly configRepo: ConfiguracionRepositoryPort,
+    private readonly metodoPagoRepo: InMemoryMetodoPagoRepository,
+    private readonly movimientoRepo: InMemoryMovimientoRepository,
   ) {}
 
   async buscarPorId(idTurno: string): Promise<TurnoCaja | null> {
@@ -279,6 +373,10 @@ export class InMemoryTurnoRepository implements TurnoRepositoryPort {
           multiplo_redondeo_efectivo: '0.00',
         };
 
+    const movsActivos = this.movimientoRepo.obtenerEntidadesActivasPorTurno(
+      turno.idTurno,
+    );
+
     return {
       id_turno: turno.idTurno,
       estado_turno: turno.obtenerCodigoEstado(),
@@ -297,13 +395,20 @@ export class InMemoryTurnoRepository implements TurnoRepositoryPort {
         nombre_completo: usuario.nombreCompleto,
         rol_usuario: usuario.rolUsuario,
       },
-      subtotales_por_metodo: this.metodos.map((m) => ({
-        id_metodo_pago: m.idMetodoPago,
-        codigo_metodo: m.codigoMetodo,
-        nombre_metodo: m.nombreMetodo,
-        permite_redondeo: m.permiteRedondeo,
-        monto_esperado: turno.calcularEsperadoInicialPorMetodo(m).aString(),
-      })),
+      subtotales_por_metodo: this.metodoPagoRepo.metodos.map((m) => {
+        let acumulado = turno.calcularEsperadoInicialPorMetodo(m);
+        for (const mov of movsActivos) {
+          if (mov.idMetodoPago !== m.idMetodoPago) continue;
+          acumulado = acumulado.sumar(mov.obtenerImporteConSigno());
+        }
+        return {
+          id_metodo_pago: m.idMetodoPago,
+          codigo_metodo: m.codigoMetodo,
+          nombre_metodo: m.nombreMetodo,
+          permite_redondeo: m.permiteRedondeo,
+          monto_esperado: acumulado.aString(),
+        };
+      }),
       configuracion: configuracionPublica,
     };
   }
@@ -313,4 +418,34 @@ export class InMemoryPinHasher implements PinHasherPort {
   async verificar(pinPlano: string, hash: string): Promise<boolean> {
     return bcrypt.compare(pinPlano, hash);
   }
+}
+
+export function crearContextoEnMemoria() {
+  const usuarioRepo = new InMemoryUsuarioRepository();
+  const configRepo = new InMemoryConfiguracionRepository();
+  const cajaRepo = new InMemoryCajaRepository();
+  const metodoPagoRepo = new InMemoryMetodoPagoRepository();
+  const movimientoRepo = new InMemoryMovimientoRepository(
+    metodoPagoRepo,
+    usuarioRepo,
+  );
+  const turnoRepo = new InMemoryTurnoRepository(
+    usuarioRepo,
+    cajaRepo,
+    configRepo,
+    metodoPagoRepo,
+    movimientoRepo,
+  );
+  cajaRepo.vincularTurnoRepo(turnoRepo);
+  const pinHasher = new InMemoryPinHasher();
+
+  return {
+    usuarioRepo,
+    configRepo,
+    cajaRepo,
+    metodoPagoRepo,
+    movimientoRepo,
+    turnoRepo,
+    pinHasher,
+  };
 }

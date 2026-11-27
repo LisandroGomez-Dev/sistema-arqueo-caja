@@ -5,47 +5,22 @@ import type {
   UsuarioRepositoryPort,
 } from '../../application/ports/out/UsuarioRepositoryPort.js';
 import { Usuario } from '../../domain/entities/Usuario.js';
+import type { CatalogoCache } from './CatalogoCache.js';
 
 export class PrismaUsuarioRepository implements UsuarioRepositoryPort {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(
+    private readonly prisma: PrismaClient,
+    private readonly catalogo: CatalogoCache,
+  ) {}
 
   async listarActivos(): Promise<OperadorPublicoDTO[]> {
-    const usuarios = await this.prisma.usuario.findMany({
-      where: { esta_activo: true },
-      orderBy: [{ rol_usuario: 'asc' }, { nombre_completo: 'asc' }],
-      select: {
-        id_usuario: true,
-        nombre_completo: true,
-        rol_usuario: true,
-      },
-    });
-
-    return usuarios;
+    const snap = await this.catalogo.obtener();
+    return snap.usuariosPublicos;
   }
 
   async buscarPorId(idUsuario: string): Promise<Usuario | null> {
-    const row = await this.prisma.usuario.findUnique({
-      where: { id_usuario: idUsuario },
-      select: {
-        id_usuario: true,
-        nombre_completo: true,
-        rol_usuario: true,
-        esta_activo: true,
-        fecha_alta: true,
-      },
-    });
-
-    if (!row) {
-      return null;
-    }
-
-    return new Usuario({
-      idUsuario: row.id_usuario,
-      nombreCompleto: row.nombre_completo,
-      rolUsuario: row.rol_usuario,
-      estaActivo: row.esta_activo,
-      fechaAlta: row.fecha_alta,
-    });
+    const snap = await this.catalogo.obtener();
+    return snap.usuariosPorId.get(idUsuario) ?? null;
   }
 
   async buscarPorIdConHash(idUsuario: string): Promise<UsuarioConHash | null> {

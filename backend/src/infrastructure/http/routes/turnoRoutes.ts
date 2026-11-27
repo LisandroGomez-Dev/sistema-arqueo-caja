@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { CajaFacade } from '../../../application/facade/CajaFacade.js';
 import { autenticarJWT, requerirRol } from '../plugins/jwtAuth.js';
+import { registrarMovimientoBodySchema } from '../schemas/movimientoSchemas.js';
 import { abrirTurnoBodySchema } from '../schemas/turnoSchemas.js';
 
 export async function turnoRoutes(
@@ -68,6 +69,42 @@ export async function turnoRoutes(
       );
 
       return reply.status(201).send({ turno });
+    },
+  );
+
+  app.get<{ Params: { idTurno: string } }>(
+    '/turnos/:idTurno/movimientos',
+    { preHandler: preHandlerOperacion },
+    async (request) => {
+      const movimientos = await cajaFacade.listarMovimientosTurno(
+        request.params.idTurno,
+        {
+          idUsuario: request.user.id_usuario,
+          rolUsuario: request.user.rol_usuario,
+        },
+      );
+      return { movimientos };
+    },
+  );
+
+  app.post<{ Params: { idTurno: string } }>(
+    '/turnos/:idTurno/movimientos',
+    { preHandler: preHandlerOperacion },
+    async (request, reply) => {
+      const body = registrarMovimientoBodySchema.parse(request.body);
+      const resultado = await cajaFacade.registrarMovimiento({
+        idTurno: request.params.idTurno,
+        idUsuario: request.user.id_usuario,
+        rolUsuario: request.user.rol_usuario,
+        codigoMetodoPago: body.codigo_metodo_pago,
+        tipoMovimiento: body.tipo_movimiento,
+        montoOperacion: body.monto_operacion,
+        conceptoDescripcion: body.concepto_descripcion ?? null,
+        origenCarga: body.origen_carga,
+        urlComprobante: body.url_comprobante ?? null,
+      });
+
+      return reply.status(201).send(resultado);
     },
   );
 }

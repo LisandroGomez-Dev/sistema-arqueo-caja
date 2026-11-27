@@ -4,6 +4,10 @@ import {
   TurnoYaAbiertoError,
 } from '../../domain/errors/DominioError.js';
 import type {
+  MovimientoDTO,
+  RegistrarMovimientoResultadoDTO,
+} from '../dto/MovimientoDTO.js';
+import type {
   CajaConEstadoDTO,
   ConfiguracionPublicaDTO,
   OperadorPublicoDTO,
@@ -11,19 +15,28 @@ import type {
 } from '../dto/TurnoActivoDTO.js';
 import type { CajaRepositoryPort } from '../ports/out/CajaRepositoryPort.js';
 import type { ConfiguracionRepositoryPort } from '../ports/out/ConfiguracionRepositoryPort.js';
+import type { MetodoPagoRepositoryPort } from '../ports/out/MetodoPagoRepositoryPort.js';
+import type { MovimientoRepositoryPort } from '../ports/out/MovimientoRepositoryPort.js';
 import type { PinHasherPort } from '../ports/out/PinHasherPort.js';
 import type { TurnoRepositoryPort } from '../ports/out/TurnoRepositoryPort.js';
 import type { UsuarioRepositoryPort } from '../ports/out/UsuarioRepositoryPort.js';
 import { AbrirTurnoUseCase } from '../use-cases/AbrirTurnoUseCase.js';
 import { AutenticarUsuarioUseCase } from '../use-cases/AutenticarUsuarioUseCase.js';
+import { ListarMovimientosTurnoUseCase } from '../use-cases/ListarMovimientosTurnoUseCase.js';
 import { ObtenerTurnoActivoUseCase } from '../use-cases/ObtenerTurnoActivoUseCase.js';
 import { ObtenerTurnoPorIdUseCase } from '../use-cases/ObtenerTurnoPorIdUseCase.js';
+import {
+  RegistrarMovimientoUseCase,
+  type RegistrarMovimientoInput,
+} from '../use-cases/RegistrarMovimientoUseCase.js';
 
 export interface CajaFacadeDependencies {
   turnoRepo: TurnoRepositoryPort;
   usuarioRepo: UsuarioRepositoryPort;
   cajaRepo: CajaRepositoryPort;
   configRepo: ConfiguracionRepositoryPort;
+  metodoPagoRepo: MetodoPagoRepositoryPort;
+  movimientoRepo: MovimientoRepositoryPort;
   pinHasher: PinHasherPort;
 }
 
@@ -39,6 +52,8 @@ export class CajaFacade {
   private readonly abrirTurnoUC: AbrirTurnoUseCase;
   private readonly obtenerTurnoActivoUC: ObtenerTurnoActivoUseCase;
   private readonly obtenerTurnoPorIdUC: ObtenerTurnoPorIdUseCase;
+  private readonly registrarMovimientoUC: RegistrarMovimientoUseCase;
+  private readonly listarMovimientosTurnoUC: ListarMovimientosTurnoUseCase;
 
   constructor(deps: CajaFacadeDependencies) {
     this.turnoRepo = deps.turnoRepo;
@@ -49,6 +64,15 @@ export class CajaFacade {
     this.abrirTurnoUC = new AbrirTurnoUseCase(deps.turnoRepo, deps.usuarioRepo, deps.cajaRepo);
     this.obtenerTurnoActivoUC = new ObtenerTurnoActivoUseCase(deps.turnoRepo);
     this.obtenerTurnoPorIdUC = new ObtenerTurnoPorIdUseCase(deps.turnoRepo);
+    this.registrarMovimientoUC = new RegistrarMovimientoUseCase(
+      deps.turnoRepo,
+      deps.metodoPagoRepo,
+      deps.movimientoRepo,
+    );
+    this.listarMovimientosTurnoUC = new ListarMovimientosTurnoUseCase(
+      deps.turnoRepo,
+      deps.movimientoRepo,
+    );
   }
 
   async listarOperadoresActivos(): Promise<OperadorPublicoDTO[]> {
@@ -115,5 +139,18 @@ export class CajaFacade {
       idCaja,
       fondoInicialEfectivo,
     });
+  }
+
+  async registrarMovimiento(
+    input: RegistrarMovimientoInput,
+  ): Promise<RegistrarMovimientoResultadoDTO> {
+    return this.registrarMovimientoUC.ejecutar(input);
+  }
+
+  async listarMovimientosTurno(
+    idTurno: string,
+    solicitante: { idUsuario: string; rolUsuario: RolUsuario },
+  ): Promise<MovimientoDTO[]> {
+    return this.listarMovimientosTurnoUC.ejecutar(idTurno, solicitante);
   }
 }

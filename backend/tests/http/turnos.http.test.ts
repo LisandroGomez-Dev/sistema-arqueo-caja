@@ -2,28 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { CajaFacade } from '../../src/application/facade/CajaFacade.js';
 import { buildApp } from '../../src/infrastructure/http/app.js';
 import {
-  InMemoryCajaRepository,
-  InMemoryConfiguracionRepository,
-  InMemoryPinHasher,
-  InMemoryTurnoRepository,
-  InMemoryUsuarioRepository,
+  crearContextoEnMemoria,
   TEST_IDS,
 } from '../helpers/inMemoryAdapters.js';
 
 function crearAppDePrueba() {
-  const usuarioRepo = new InMemoryUsuarioRepository();
-  const configRepo = new InMemoryConfiguracionRepository();
-  const cajaRepo = new InMemoryCajaRepository();
-  const turnoRepo = new InMemoryTurnoRepository(usuarioRepo, cajaRepo, configRepo);
-  cajaRepo.vincularTurnoRepo(turnoRepo);
-  const pinHasher = new InMemoryPinHasher();
-  const cajaFacade = new CajaFacade({
-    turnoRepo,
-    usuarioRepo,
-    cajaRepo,
-    configRepo,
-    pinHasher,
-  });
+  const cajaFacade = new CajaFacade(crearContextoEnMemoria());
 
   return buildApp({
     cajaFacade,

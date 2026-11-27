@@ -2,9 +2,12 @@ import 'dotenv/config';
 import './instrument.js';
 import { CajaFacade } from './application/facade/CajaFacade.js';
 import { buildApp } from './infrastructure/http/app.js';
+import { CatalogoCache } from './infrastructure/persistence/CatalogoCache.js';
 import { prisma } from './infrastructure/persistence/prismaClient.js';
 import { PrismaCajaRepository } from './infrastructure/persistence/PrismaCajaRepository.js';
 import { PrismaConfiguracionRepository } from './infrastructure/persistence/PrismaConfiguracionRepository.js';
+import { PrismaMetodoPagoRepository } from './infrastructure/persistence/PrismaMetodoPagoRepository.js';
+import { PrismaMovimientoRepository } from './infrastructure/persistence/PrismaMovimientoRepository.js';
 import { PrismaTurnoRepository } from './infrastructure/persistence/PrismaTurnoRepository.js';
 import { PrismaUsuarioRepository } from './infrastructure/persistence/PrismaUsuarioRepository.js';
 import { BcryptPinHasher } from './infrastructure/security/BcryptPinHasher.js';
@@ -39,11 +42,15 @@ async function start(): Promise<void> {
   const frontendUrls = obtenerFrontendUrls();
   const enableSentry = Boolean(process.env.SENTRY_DSN?.trim());
 
+  const catalogo = new CatalogoCache(prisma);
+
   const cajaFacade = new CajaFacade({
-    turnoRepo: new PrismaTurnoRepository(prisma),
-    usuarioRepo: new PrismaUsuarioRepository(prisma),
-    cajaRepo: new PrismaCajaRepository(prisma),
-    configRepo: new PrismaConfiguracionRepository(prisma),
+    turnoRepo: new PrismaTurnoRepository(prisma, catalogo),
+    usuarioRepo: new PrismaUsuarioRepository(prisma, catalogo),
+    cajaRepo: new PrismaCajaRepository(prisma, catalogo),
+    configRepo: new PrismaConfiguracionRepository(catalogo),
+    metodoPagoRepo: new PrismaMetodoPagoRepository(catalogo),
+    movimientoRepo: new PrismaMovimientoRepository(prisma, catalogo),
     pinHasher: new BcryptPinHasher(),
   });
 
@@ -55,7 +62,11 @@ async function start(): Promise<void> {
   });
 
   try {
-    await app.listen({ port, host: '0.0.0.0' });
+    // Pre-calentar conexión y catálogos en paralelo para que el primer request sea instantáneo.
+    await Promise.all([
+      app.listen({ port, host: '0.0.0.0' }),
+      catalogo.obtener().catch(() => null),
+    ]);
     console.log(`Backend ArqueoCaja escuchando en http://localhost:${port}/api/v1`);
   } catch (error) {
     app.log.error(error);
