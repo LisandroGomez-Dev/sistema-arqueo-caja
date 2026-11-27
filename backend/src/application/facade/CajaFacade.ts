@@ -1,8 +1,13 @@
 import type { RolUsuario } from '../../domain/entities/Usuario.js';
 import {
   CajaOcupadaError,
+  ConfiguracionNoEncontradaError,
   TurnoYaAbiertoError,
 } from '../../domain/errors/DominioError.js';
+import {
+  mapearConfiguracionCajaDTO,
+  type ConfiguracionCajaDTO,
+} from '../dto/ConfiguracionDTO.js';
 import type {
   AnularMovimientoResultadoDTO,
   MovimientoDTO,
@@ -27,6 +32,10 @@ import {
   type AnularMovimientoInput,
 } from '../use-cases/AnularMovimientoUseCase.js';
 import { AutenticarUsuarioUseCase } from '../use-cases/AutenticarUsuarioUseCase.js';
+import {
+  ConfigurarRedondeoUseCase,
+  type ConfigurarRedondeoInput,
+} from '../use-cases/ConfigurarRedondeoUseCase.js';
 import { ListarMovimientosTurnoUseCase } from '../use-cases/ListarMovimientosTurnoUseCase.js';
 import { ObtenerTurnoActivoUseCase } from '../use-cases/ObtenerTurnoActivoUseCase.js';
 import { ObtenerTurnoPorIdUseCase } from '../use-cases/ObtenerTurnoPorIdUseCase.js';
@@ -60,6 +69,7 @@ export class CajaFacade {
   private readonly registrarMovimientoUC: RegistrarMovimientoUseCase;
   private readonly listarMovimientosTurnoUC: ListarMovimientosTurnoUseCase;
   private readonly anularMovimientoUC: AnularMovimientoUseCase;
+  private readonly configurarRedondeoUC: ConfigurarRedondeoUseCase;
 
   constructor(deps: CajaFacadeDependencies) {
     this.turnoRepo = deps.turnoRepo;
@@ -85,6 +95,10 @@ export class CajaFacade {
       deps.movimientoRepo,
       deps.metodoPagoRepo,
     );
+    this.configurarRedondeoUC = new ConfigurarRedondeoUseCase(
+      deps.configRepo,
+      deps.usuarioRepo,
+    );
   }
 
   async listarOperadoresActivos(): Promise<OperadorPublicoDTO[]> {
@@ -105,8 +119,25 @@ export class CajaFacade {
     }
     return {
       nombre_comercio: config.nombreComercio,
-      multiplo_redondeo_efectivo: config.multiploRedondeoEfectivo.aString(),
+      multiplo_redondeo_efectivo: config.getMultiploRedondeoEfectivo().aString(),
     };
+  }
+
+  async obtenerConfiguracionCaja(): Promise<ConfiguracionCajaDTO> {
+    const config = await this.configRepo.obtenerActual();
+    if (!config) {
+      throw new ConfiguracionNoEncontradaError();
+    }
+    const usuarioActualizacion = await this.usuarioRepo.buscarPorId(
+      config.idUsuarioActualizacion,
+    );
+    return mapearConfiguracionCajaDTO(config, usuarioActualizacion);
+  }
+
+  async configurarRedondeo(
+    input: ConfigurarRedondeoInput,
+  ): Promise<ConfiguracionCajaDTO> {
+    return this.configurarRedondeoUC.ejecutar(input);
   }
 
   async autenticarUsuario(idUsuario: string, pin: string): Promise<OperadorPublicoDTO> {

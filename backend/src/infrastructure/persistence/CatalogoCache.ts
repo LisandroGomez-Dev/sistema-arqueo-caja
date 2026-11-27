@@ -25,6 +25,8 @@ export interface CatalogoSnapshot {
     idConfiguracion: string;
     nombreComercio: string;
     multiploRedondeoEfectivo: Dinero;
+    idUsuarioActualizacion: string;
+    fechaUltimaActualizacion: Date;
     publica: ConfiguracionPublicaDTO;
   } | null;
 }
@@ -144,6 +146,8 @@ export class CatalogoCache {
               idConfiguracion: configRow.id_configuracion,
               nombreComercio: configRow.nombre_comercio,
               multiploRedondeoEfectivo: multiplo,
+              idUsuarioActualizacion: configRow.id_usuario_actualizacion,
+              fechaUltimaActualizacion: configRow.fecha_ultima_actualizacion,
               publica: {
                 nombre_comercio: configRow.nombre_comercio,
                 multiplo_redondeo_efectivo: multiplo.aString(),

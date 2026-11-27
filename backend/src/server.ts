@@ -48,7 +48,7 @@ async function start(): Promise<void> {
     turnoRepo: new PrismaTurnoRepository(prisma, catalogo),
     usuarioRepo: new PrismaUsuarioRepository(prisma, catalogo),
     cajaRepo: new PrismaCajaRepository(prisma, catalogo),
-    configRepo: new PrismaConfiguracionRepository(catalogo),
+    configRepo: new PrismaConfiguracionRepository(prisma, catalogo),
     metodoPagoRepo: new PrismaMetodoPagoRepository(catalogo),
     movimientoRepo: new PrismaMovimientoRepository(prisma, catalogo),
     pinHasher: new BcryptPinHasher(),

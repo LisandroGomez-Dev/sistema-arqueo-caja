@@ -6,6 +6,7 @@ import { ZodError } from 'zod';
 import type { CajaFacade } from '../../application/facade/CajaFacade.js';
 import { DominioError } from '../../domain/errors/DominioError.js';
 import { authRoutes } from './routes/authRoutes.js';
+import { configuracionRoutes } from './routes/configuracionRoutes.js';
 import { healthRoutes } from './routes/healthRoutes.js';
 import { turnoRoutes } from './routes/turnoRoutes.js';
 
@@ -66,6 +67,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       await healthRoutes(api);
       await authRoutes(api, options.cajaFacade);
       await turnoRoutes(api, options.cajaFacade);
+      await configuracionRoutes(api, options.cajaFacade);
     },
     { prefix: '/api/v1' },
   );

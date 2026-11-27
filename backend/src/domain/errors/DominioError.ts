@@ -160,3 +160,27 @@ export class UsuarioNoEncontradoError extends DominioError {
     super(mensaje);
   }
 }
+
+/** Se lanza cuando no existe configuración de caja registrada. */
+export class ConfiguracionNoEncontradaError extends DominioError {
+  readonly codigo = 'CONFIGURACION_NO_ENCONTRADA';
+  readonly statusHttp = 404;
+
+  constructor(
+    mensaje = 'No se encontró una configuración de caja activa para el comercio.',
+  ) {
+    super(mensaje);
+  }
+}
+
+/** Se lanza si se intenta agregar más de una línea para el mismo método de pago en un arqueo. */
+export class MetodoDuplicadoEnArqueoError extends DominioError {
+  readonly codigo = 'METODO_DUPLICADO_EN_ARQUEO';
+  readonly statusHttp = 409;
+
+  constructor(
+    mensaje = 'No puede repetirse el mismo método de pago dentro de un mismo arqueo de cierre.',
+  ) {
+    super(mensaje);
+  }
+}

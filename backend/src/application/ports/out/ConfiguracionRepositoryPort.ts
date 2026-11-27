@@ -1,11 +1,6 @@
-import type { Dinero } from '../../../domain/value-objects/Dinero.js';
-
-export interface ConfiguracionCajaActual {
-  idConfiguracion: string;
-  nombreComercio: string;
-  multiploRedondeoEfectivo: Dinero;
-}
+import type { ConfiguracionCaja } from '../../../domain/entities/ConfiguracionCaja.js';
 
 export interface ConfiguracionRepositoryPort {
-  obtenerActual(): Promise<ConfiguracionCajaActual | null>;
+  obtenerActual(): Promise<ConfiguracionCaja | null>;
+  guardarActualizacion(config: ConfiguracionCaja): Promise<ConfiguracionCaja>;
 }

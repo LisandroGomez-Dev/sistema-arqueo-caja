@@ -1,3 +1,8 @@
+import type { EstrategiaRedondeo } from '../strategy/EstrategiaRedondeo.js';
+import { RedondeoComercialStrategy } from '../strategy/RedondeoComercialStrategy.js';
+import { SinRedondeoStrategy } from '../strategy/SinRedondeoStrategy.js';
+import type { Dinero } from '../value-objects/Dinero.js';
+
 export type CodigoMetodoPago = 'EFECTIVO' | 'QR_TRANSFERENCIA' | 'TARJETA';
 
 export interface MetodoPagoProps {
@@ -28,5 +33,15 @@ export class MetodoPago {
 
   esEfectivo(): boolean {
     return this.codigoMetodo === 'EFECTIVO';
+  }
+
+  /**
+   * Selecciona polimórficamente la EstrategiaRedondeo aplicable al canal (RN-03, RN-04).
+   */
+  obtenerEstrategiaRedondeo(multiplo: Dinero): EstrategiaRedondeo {
+    if (!this.permiteRedondeo || multiplo.esCero()) {
+      return new SinRedondeoStrategy();
+    }
+    return new RedondeoComercialStrategy(multiplo);
   }
 }

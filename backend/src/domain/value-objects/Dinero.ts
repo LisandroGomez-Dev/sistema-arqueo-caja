@@ -61,6 +61,26 @@ export class Dinero {
     return this.valor.isPositive() && !this.valor.isZero();
   }
 
+  absoluto(): Dinero {
+    return new Dinero(this.valor.abs());
+  }
+
+  menorQue(otro: Dinero): boolean {
+    return this.valor.lessThan(otro.valor);
+  }
+
+  menorOIgualQue(otro: Dinero): boolean {
+    return this.valor.lessThanOrEqualTo(otro.valor);
+  }
+
+  mayorQue(otro: Dinero): boolean {
+    return this.valor.greaterThan(otro.valor);
+  }
+
+  mayorOIgualQue(otro: Dinero): boolean {
+    return this.valor.greaterThanOrEqualTo(otro.valor);
+  }
+
   sumar(otro: Dinero): Dinero {
     return new Dinero(this.valor.plus(otro.valor));
   }

@@ -7,10 +7,7 @@ import type {
   TurnoActivoDTO,
 } from '../../src/application/dto/TurnoActivoDTO.js';
 import type { CajaRepositoryPort } from '../../src/application/ports/out/CajaRepositoryPort.js';
-import type {
-  ConfiguracionCajaActual,
-  ConfiguracionRepositoryPort,
-} from '../../src/application/ports/out/ConfiguracionRepositoryPort.js';
+import type { ConfiguracionRepositoryPort } from '../../src/application/ports/out/ConfiguracionRepositoryPort.js';
 import type { MetodoPagoRepositoryPort } from '../../src/application/ports/out/MetodoPagoRepositoryPort.js';
 import type { MovimientoRepositoryPort } from '../../src/application/ports/out/MovimientoRepositoryPort.js';
 import type { PinHasherPort } from '../../src/application/ports/out/PinHasherPort.js';
@@ -20,6 +17,7 @@ import type {
   UsuarioRepositoryPort,
 } from '../../src/application/ports/out/UsuarioRepositoryPort.js';
 import { Caja } from '../../src/domain/entities/Caja.js';
+import { ConfiguracionCaja } from '../../src/domain/entities/ConfiguracionCaja.js';
 import { MetodoPago } from '../../src/domain/entities/MetodoPago.js';
 import type { MovimientoCaja } from '../../src/domain/entities/MovimientoCaja.js';
 import type { TurnoCaja } from '../../src/domain/entities/TurnoCaja.js';
@@ -110,12 +108,23 @@ export class InMemoryUsuarioRepository implements UsuarioRepositoryPort {
 export class InMemoryConfiguracionRepository
   implements ConfiguracionRepositoryPort
 {
-  async obtenerActual(): Promise<ConfiguracionCajaActual | null> {
-    return {
-      idConfiguracion: '33333333-3333-4333-8333-333333333333',
-      nombreComercio: 'Supermercado Mayorista — Sucursal Centro',
-      multiploRedondeoEfectivo: Dinero.cero(),
-    };
+  private configuracion: ConfiguracionCaja = new ConfiguracionCaja({
+    idConfiguracion: '33333333-3333-4333-8333-333333333333',
+    nombreComercio: 'Supermercado Mayorista — Sucursal Centro',
+    multiploRedondeoEfectivo: Dinero.cero(),
+    idUsuarioActualizacion: TEST_IDS.encargado,
+    fechaUltimaActualizacion: new Date('2026-11-27T09:00:00.000Z'),
+  });
+
+  async obtenerActual(): Promise<ConfiguracionCaja | null> {
+    return this.configuracion;
+  }
+
+  async guardarActualizacion(
+    config: ConfiguracionCaja,
+  ): Promise<ConfiguracionCaja> {
+    this.configuracion = config;
+    return this.configuracion;
   }
 }
 
@@ -391,7 +400,9 @@ export class InMemoryTurnoRepository implements TurnoRepositoryPort {
     const configuracionPublica: ConfiguracionPublicaDTO = config
       ? {
           nombre_comercio: config.nombreComercio,
-          multiplo_redondeo_efectivo: config.multiploRedondeoEfectivo.aString(),
+          multiplo_redondeo_efectivo: config
+            .getMultiploRedondeoEfectivo()
+            .aString(),
         }
       : {
           nombre_comercio: 'Comercio ArqueoCaja',
