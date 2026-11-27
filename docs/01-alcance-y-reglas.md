@@ -1,7 +1,7 @@
 # 01. Especificación de Requerimientos de Software (ERS) — Alcance, Actores y Reglas de Negocio
 
 > **Proyecto:** Sistema de Arqueo y Cierre de Caja Inteligente  
-> **Versión:** 1.1 (MVP)  
+> **Versión:** 1.2 (MVP)  
 > **Issue asociado:** `#1`  
 > **Milestone:** `v0.1 - Análisis y Diseño Funcional`
 
@@ -25,7 +25,7 @@ El sistema es una aplicación web *responsive* orientada a comercios con atenci�
 - Anulación lógica auditable de movimientos erróneos con motivo obligatorio (sin borrado físico).
 - Motor determinístico de redondeo comercial en efectivo y cálculo exacto de sobrantes/faltantes.
 - Cierre de caja en 1 clic con bloqueo definitivo de la sesión e historial de arqueos.
-- Copiloto IA (`gemini-4-hydrogen`) para carga por texto/voz, lectura de tickets y Asistente de Guardia Nocturna.
+- Copiloto IA (`gemini-4-hydrogen`) en formato chat lateral para carga por texto/voz, lectura de tickets y **Asistente Operativo de Turno 24/7** (disponible en cualquier turno: mañana, tarde o noche).
 
 ### 2.2 Exclusiones de esta primera entrega (Fuera de Alcance)
 - Facturación electrónica (integración con AFIP / ARCA).
@@ -40,8 +40,8 @@ El sistema es una aplicación web *responsive* orientada a comercios con atenci�
 
 | Perfil / Actor | Experiencia Técnica | Frecuencia de Uso | Funciones Principales |
 | :--- | :--- | :--- | :--- |
-| **Cajero / Mostrador** | Básica. Uso cotidiano de navegador o celular/tablet en mostrador. | Continua (durante todo el turno laboral). | Abrir turno con fondo inicial, registrar ingresos y egresos, usar el Copiloto IA (carga rápida y Asistente de Guardia Nocturna), ejecutar el cierre de caja de su turno. |
-| **Encargado / Dueño** | Básica / Intermedia. Familiarizado con control comercial diario. | Diaria / Periódica (al finalizar turnos o auditar). | Supervisar movimientos en tiempo real, anular movimientos erróneos con motivo, configurar regla de redondeo comercial, consultar historial de cierres e incidencias nocturnas. |
+| **Cajero / Mostrador** | Básica. Uso cotidiano de navegador en PC de mostrador o celular/tablet. | Continua (durante cualquier turno: mañana, tarde o noche). | Abrir turno con fondo inicial, registrar ingresos y egresos, usar el Copiloto IA (carga rápida y Asistente Operativo de Turno 24/7), ejecutar el cierre de caja de su turno. |
+| **Encargado / Dueño** | Básica / Intermedia. Familiarizado con control comercial diario. | Diaria / Periódica (al finalizar turnos o auditar). | Supervisar movimientos en tiempo real, anular movimientos erróneos con motivo, configurar margen de tolerancia/redondeo, consultar historial de cierres e incidencias de todos los turnos. |
 
 ---
 
@@ -78,7 +78,7 @@ El sistema es una aplicación web *responsive* orientada a comercios con atenci�
   - **Política de Sobrantes (`diferencia_real > 0`):** Todo sobrante queda registrado a favor de la empresa (nunca del cajero). Cuando el sobrante supera el margen de tolerancia (ej. cobro erróneo de `$20.000` en una compra de `$10.000`), el sistema destaca una alerta de **posible reclamo de cliente** para conservar respaldo contable ante una eventual devolución.
 - **RN-08 — Segregación de Roles y Permisos:** Cada operación crítica valida el perfil del usuario autenticado. El **Cajero/Mostrador** puede abrir turno, registrar movimientos, utilizar el Copiloto IA y cerrar su turno. Únicamente el **Encargado/Dueño** puede anular movimientos, configurar el redondeo comercial, auditar el historial completo de cierres y marcar incidencias como resueltas (pudiendo también operar caja cuando cubre un turno).
 - **RN-09 — Principio de Confirmación Humana sobre el Copiloto IA:** Ninguna salida de `gemini-4-hydrogen` (carga por voz/texto, lectura de comprobante o diagnóstico de descuadre) impacta de forma autónoma en el libro contable. Toda sugerencia se presenta como borrador editable que exige confirmación explícita del operador, registrándose el origen de carga (`MANUAL`, `IA_VOZ_TEXTO`, `IA_COMPROBANTE`).
-- **RN-10 — Trazabilidad y Resolución de Incidencias de Turno:** Toda contingencia reportada durante la jornada (especialmente vía Asistente de Guardia Nocturna) queda obligatoriamente vinculada al turno de caja activo con categoría, resumen, usuario informante y estado de seguimiento (`PENDIENTE` / `RESUELTA`), registrando quién y cuándo la resolvió.
+- **RN-10 — Trazabilidad y Resolución de Incidencias de Turno (24/7):** Toda contingencia reportada durante cualquier turno (mañana, tarde o noche, especialmente vía Asistente Operativo de Turno 24/7) queda obligatoriamente vinculada al turno de caja activo con categoría, resumen, usuario informante y estado de seguimiento (`PENDIENTE` / `RESUELTA`), registrando quién y cuándo la resolvió.
 
 ---
 
@@ -95,7 +95,7 @@ El sistema es una aplicación web *responsive* orientada a comercios con atenci�
 | **RF-05** | Media | `CU-ConsultarHistorial` | El sistema debe permitir al Encargado/Dueño listar los cierres históricos y las incidencias filtrando por fecha y cajero, y copiar un resumen formateado. |
 | **RF-06** | Media | `CU-CargaRapidaIA` | El sistema debe permitir al Cajero ingresar texto o audio en lenguaje natural para que `gemini-4-hydrogen` devuelva un borrador estructurado de movimiento listo para confirmar. |
 | **RF-07** | Media | `CU-LeerComprobanteIA` | El sistema debe permitir subir la imagen de un ticket o comprobante para extraer automáticamente monto, fecha, concepto y método de pago sugerido. |
-| **RF-08** | Alta | `CU-AsistenteNocturnoIA` | El sistema debe proveer un Asistente de Guardia que responda dudas operativas ante fallas en turno noche, analice posibles causas de descuadre y genere un parte de incidencia vinculado al turno. |
+| **RF-08** | Alta | `CU-AsistenteOperativoIA` | El sistema debe proveer un **Asistente Operativo de Turno 24/7** (disponible en cualquier turno — mañana, tarde o noche — y especialmente valioso en guardias sin administración) que responda dudas operativas ante fallas de cobro, analice posibles causas de descuadre y genere un parte de incidencia vinculado al turno. |
 | **RF-09** | Media | `CU-ConfigurarRedondeo` | El sistema debe permitir al Encargado/Dueño configurar el margen de tolerancia / redondeo comercial aplicable a efectivo (`$0` estricto por defecto, o ej. `$10`, `$100`, `$500`), registrando usuario y fecha de modificación sin alterar cierres históricos. |
 
 ### 6.2 Requisitos No Funcionales (RNF)
@@ -122,5 +122,5 @@ El sistema es una aplicación web *responsive* orientada a comercios con atenci�
 | :---: | :--- | :---: | :---: | :--- | :--- |
 | **R1** | Errores de redondeo o precisión en montos con punto flotante. | Media | Alto | Prohibir `float`; operar con enteros en centavos o `Decimal` estricto desde la base de datos. | Ejecutar suite de pruebas unitarias sobre el motor de cierre antes de cada release. |
 | **R2** | Alucinación o formato inválido de la IA al interpretar voz/tickets. | Media | Medio | Usar **Structured Outputs (JSON Schema)** en `gemini-4-hydrogen` y exigir confirmación manual previa. | Permitir edición manual inmediata del borrador o carga tradicional sin IA. |
-| **R3** | Latencia o caída temporal de la API de Gemini en hora pico / turno noche. | Baja | Medio | Mantener el núcleo determinístico 100% desacoplado de la IA. | El mostrador sigue operando normalmente con carga manual y manual de contingencia local. |
+| **R3** | Latencia o caída temporal de la API de Gemini en hora pico o cualquier turno. | Baja | Medio | Mantener el núcleo determinístico 100% desacoplado de la IA. | El mostrador sigue operando normalmente con carga manual y protocolo de contingencia local. |
 | **R4** | Manipulación o borrado indebido de movimientos por error o fraude. | Media | Alto | Implementar inmutabilidad contable con anulación lógica (RN-01) y restringir anulaciones al rol Encargado/Dueño. | Auditar el historial de anulaciones y cierres por usuario. |

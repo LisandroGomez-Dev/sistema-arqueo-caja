@@ -1,6 +1,6 @@
 # 🧾 Sistema de Arqueo y Cierre de Caja Inteligente
 
-Sistema web orientado a automatizar el registro de ingresos/egresos por método de pago y simplificar el **arqueo y cierre de caja en 1 clic**, incorporando un **Copiloto IA (`gemini-4-hydrogen`)** para carga rápida manos libres, lectura de comprobantes y asistencia operativa en turno noche.
+Sistema web orientado a automatizar el registro de ingresos/egresos por método de pago y simplificar el **arqueo y cierre de caja en 1 clic**, incorporando un **Copiloto IA (`gemini-4-hydrogen`)** en formato chat lateral deslizable para carga rápida manos libres, lectura de comprobantes y asistencia operativa 24/7 en cualquier turno.
 
 > 📋 **Seguimiento del proyecto:** Podés ver el avance en tiempo real en el tablero Kanban: [**Roadmap - Sistema Arqueo de Caja**](https://github.com/LisandroGomez-Dev/sistema-arqueo-caja/projects)
 
@@ -8,14 +8,14 @@ Sistema web orientado a automatizar el registro de ingresos/egresos por método 
 
 ## 🎯 Problema que resuelve
 
-En la mayoría de los comercios chicos y medianos, el cierre de caja sigue siendo manual: contar billetes, revisar cupones de posnet y conciliar transferencias en planillas o cuadernos. Esto genera pérdida de tiempo al final de la jornada, errores humanos y falta de trazabilidad ante descuadres (especialmente en turnos nocturnos sin soporte administrativo).
+En la mayoría de los comercios chicos y medianos, el cierre de caja sigue siendo manual: contar billetes, revisar cupones de posnet y conciliar transferencias en planillas o cuadernos. Esto genera pérdida de tiempo al final de la jornada, errores humanos y falta de trazabilidad ante descuadres o contingencias en mostrador (con mayor impacto en turnos nocturnos sin soporte administrativo).
 
 ### Solución: Arquitectura en 2 Capas
-1. **Núcleo de Caja Determinístico:** Lógica contable pura y exacta (sin intervención de IA en los cálculos) que garantiza inmutabilidad de movimientos, separación por método de pago y cálculo de redondeo comercial.
-2. **Copiloto IA (Gemini 4 Hydrogen):** Capa de asistencia inteligente para:
+1. **Núcleo de Caja Determinístico:** Lógica contable pura y exacta (sin intervención de IA en los cálculos) que garantiza inmutabilidad de movimientos, separación por método de pago y cálculo de tolerancia / redondeo comercial.
+2. **Copiloto IA (`gemini-4-hydrogen`) — Chat Operativo 24/7:** Capa de asistencia inteligente disponible para **todos los turnos (mañana, tarde y noche)**:
    - Carga rápida en lenguaje natural / voz (*Structured Outputs*).
    - Extracción automática de datos desde fotos de tickets/comprobantes.
-   - **Asistente de Guardia Nocturna:** Guía de contingencias y pre-auditoría de descuadres cuando Administración no está disponible.
+   - **Asistente Operativo de Turno 24/7:** Guía de contingencias, pre-auditoría de descuadres y armado de partes de incidencia para cualquier turno (especialmente valioso cuando Administración no está disponible).
 
 ---
 

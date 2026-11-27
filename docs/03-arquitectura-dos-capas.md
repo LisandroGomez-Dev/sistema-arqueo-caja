@@ -1,7 +1,7 @@
 # 03. Arquitectura en 2 Capas (Backend Hexagonal) y Contratos de Integración
 
 > **Proyecto:** Sistema de Arqueo y Cierre de Caja Inteligente  
-> **Versión:** 1.0 (MVP)  
+> **Versión:** 1.1 (MVP)  
 > **Issue asociado:** `#12`  
 > **Milestone:** `v0.1 - Análisis y Diseño Funcional`  
 > **Documentos de referencia:** [01 - ERS y Reglas de Negocio](./01-alcance-y-reglas.md) · [02 - Modelo de Datos (DER)](./02-modelo-datos.md)
@@ -17,7 +17,7 @@ El sistema se construye sobre el principio de **separación estricta en 2 capas*
    - **Cero dependencias externas:** no conoce Fastify, ni Prisma, ni el SDK de Gemini. Se prueba de forma aislada con tests unitarios determinísticos.
 2. **Capa 2 — Copiloto IA (`gemini-4-hydrogen`) como Adaptador de Salida Desacoplado:**
    - Se integra detrás del puerto `CopilotoIAPort`.
-   - Solo recibe entradas no estructuradas (texto, audio, foto de ticket o consulta nocturna) y devuelve **borradores JSON validados** (*Structured Outputs*).
+   - Solo recibe entradas no estructuradas (texto, audio, foto de ticket o consulta operativa 24/7 de cualquier turno) y devuelve **borradores JSON validados** (*Structured Outputs*).
    - **Nunca** ejecuta operaciones de escritura ni cálculos contables (`RN-09`). Si la API de Gemini presenta latencia o caída (`R3`), el mostrador sigue operando al 100% en modo manual.
 
 ---
@@ -150,11 +150,11 @@ Todos los endpoints protegidos requieren token JWT en `Authorization: Bearer <to
 | `POST` | `/api/v1/turnos/:idTurno/cerrar` | `CAJERO`, `ENCARGADO` | `CU-CerrarCaja` (`#6`) | Ejecuta el motor determinístico, guarda `arqueos_cierre` + `detalle_arqueo_metodo` y cierra el turno. |
 | `GET` | `/api/v1/arqueos` | **`ENCARGADO`** | `CU-ConsultarHistorial` (`#7`) | Lista historial de cierres con filtros por fecha y usuario + resumen formateado. |
 | `GET` | `/api/v1/incidencias` | **`ENCARGADO`** | `CU-ConsultarHistorial` (`#7`, `#10`) | Lista partes de contingencia filtrables por turno y estado (`PENDIENTE`/`RESUELTA`). |
-| `PATCH` | `/api/v1/incidencias/:idIncidencia/resolver` | **`ENCARGADO`** | `CU-AsistenteNocturnoIA` (`#10`) | Marca una incidencia como `RESUELTA` registrando usuario y fecha/hora (`RN-10`). |
+| `PATCH` | `/api/v1/incidencias/:idIncidencia/resolver` | **`ENCARGADO`** | `CU-AsistenteOperativoIA` (`#10`) | Marca una incidencia como `RESUELTA` registrando usuario y fecha/hora (`RN-10`). |
 | `POST` | `/api/v1/ia/interpretar-movimiento` | `CAJERO`, `ENCARGADO` | `CU-CargaRapidaIA` (`#8`) | Recibe texto/audio y devuelve borrador JSON (no persiste en BD). |
 | `POST` | `/api/v1/ia/leer-comprobante` | `CAJERO`, `ENCARGADO` | `CU-LeerComprobanteIA` (`#9`) | Recibe imagen de ticket/transferencia y devuelve borrador JSON (no persiste en BD). |
-| `POST` | `/api/v1/ia/guardia-nocturna` | `CAJERO`, `ENCARGADO` | `CU-AsistenteNocturnoIA` (`#10`) | Asiste ante fallas o descuadres (solo lectura de movimientos) y propone borrador de incidencia. |
-| `POST` | `/api/v1/turnos/:idTurno/incidencias` | `CAJERO`, `ENCARGADO` | `CU-AsistenteNocturnoIA` (`#10`) | Persiste el parte de incidencia en `incidencias_turno` tras confirmación del operador. |
+| `POST` | `/api/v1/ia/asistente-operativo` | `CAJERO`, `ENCARGADO` | `CU-AsistenteOperativoIA` (`#10`) | Asistente Operativo 24/7 para cualquier turno: orienta ante fallas o descuadres (solo lectura) y propone borrador de incidencia. |
+| `POST` | `/api/v1/turnos/:idTurno/incidencias` | `CAJERO`, `ENCARGADO` | `CU-AsistenteOperativoIA` (`#10`) | Persiste el parte de incidencia en `incidencias_turno` tras confirmación del operador. |
 
 ---
 
@@ -179,7 +179,9 @@ El adaptador `AdaptadorGeminiIA` envía `responseMimeType: "application/json"` y
 - `monto_operacion` se devuelve como **string decimal** (ej. `"8500.00"`) para parsearlo directo a `Decimal` sin pasar por punto flotante.
 - El borrador se muestra editable en el Frontend; recién al confirmar se llama a `POST /api/v1/turnos/:idTurno/movimientos` con `origen_carga = 'IA_VOZ_TEXTO'` o `'IA_COMPROBANTE'`.
 
-### 8.2 Contrato del Asistente de Guardia Nocturna (`#10`)
+### 8.2 Contrato del Asistente Operativo de Turno 24/7 (`#10`)
+
+Disponible para **todos los turnos (mañana, tarde y noche)** dentro del panel de chat del Copiloto IA (especialmente útil en guardias sin administración presencial):
 
 ```json
 {
@@ -189,7 +191,7 @@ El adaptador `AdaptadorGeminiIA` envía `responseMimeType: "application/json"` y
   ],
   "borrador_incidencia": {
     "categoria_incidencia": "POSNET",
-    "detalle_incidencia": "Corte intermitente de posnet a las 23:40. Cobro de $12.500 verificado con captura de comprobante."
+    "detalle_incidencia": "Corte intermitente de posnet durante el turno. Cobro de $12.500 verificado con captura de comprobante."
   }
 }
 ```

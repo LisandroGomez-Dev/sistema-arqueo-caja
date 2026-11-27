@@ -1,7 +1,7 @@
 # 02. Modelo de Datos (DER) y Diccionario de Datos
 
 > **Proyecto:** Sistema de Arqueo y Cierre de Caja Inteligente  
-> **Versión:** 1.0 (MVP)  
+> **Versión:** 1.1 (MVP)  
 > **Issue asociado:** `#11`  
 > **Milestone:** `v0.1 - Análisis y Diseño Funcional`  
 > **Documento de referencia:** [01 - Alcance, Actores y Reglas de Negocio](./01-alcance-y-reglas.md)
@@ -141,7 +141,7 @@ Desglose normalizado (3FN) del resultado del arqueo por cada método de pago (`R
 ---
 
 ### 3.8 `incidencias_turno`
-Partes de novedades y contingencias reportadas durante el turno (especialmente por el Asistente de Guardia Nocturna) (`RN-10`).
+Partes de novedades y contingencias reportadas durante cualquier turno (mañana, tarde o noche, asistidas por el Asistente Operativo de Turno 24/7) (`RN-10`).
 
 | Atributo | Tipo de Dato | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- |
