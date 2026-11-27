@@ -56,6 +56,14 @@ export interface ConfiguracionPublica {
   multiplo_redondeo_efectivo: string;
 }
 
+export interface ConfiguracionCajaDetalle {
+  id_configuracion: string;
+  nombre_comercio: string;
+  multiplo_redondeo_efectivo: string;
+  fecha_ultima_actualizacion: string;
+  usuario_actualizacion: OperadorPublico | null;
+}
+
 export interface SubtotalMetodo {
   id_metodo_pago: string;
   codigo_metodo: string;
@@ -400,6 +408,39 @@ export async function anularMovimientoTurno(
     });
   }
   cacheDatos.delete('GET:/turnos/activos');
+
+  return data;
+}
+
+export function obtenerConfiguracionCajaEnCache(): ConfiguracionCajaDetalle | null {
+  return (
+    leerCache<{ configuracion: ConfiguracionCajaDetalle }>(
+      'GET:/configuracion/caja',
+      60_000,
+    )?.configuracion ?? null
+  );
+}
+
+export function obtenerConfiguracionCaja(): Promise<{
+  configuracion: ConfiguracionCajaDetalle;
+}> {
+  return request('/configuracion/caja');
+}
+
+export async function actualizarConfiguracionRedondeo(
+  multiploRedondeoEfectivo: string,
+): Promise<{ configuracion: ConfiguracionCajaDetalle }> {
+  const data = await request<{ configuracion: ConfiguracionCajaDetalle }>(
+    '/configuracion/caja',
+    {
+      method: 'PATCH',
+      body: { multiplo_redondeo_efectivo: multiploRedondeoEfectivo },
+    },
+  );
+
+  invalidarCacheOperativa();
+  cacheDatos.delete('GET:/auth/operadores');
+  escribirCache('GET:/configuracion/caja', data);
 
   return data;
 }

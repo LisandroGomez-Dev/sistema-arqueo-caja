@@ -8,11 +8,11 @@ import {
   QrCode,
   RefreshCw,
   ShieldCheck,
-  SlidersHorizontal,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AppLayout } from '../components/AppLayout';
+import { ConfiguracionRedondeoCard } from '../components/ConfiguracionRedondeoCard';
 import { useAuth } from '../context/AuthContext';
 import { formatearHoraArgentina, formatearPesos } from '../lib/formatMoney';
 import {
@@ -224,7 +224,7 @@ export function EncargadoBasePage() {
         )}
 
         {/* Módulos de gestión del roadmap */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -232,40 +232,23 @@ export function EncargadoBasePage() {
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <h3 className="text-sm font-bold text-slate-900">
-                  Auditoría, Anulaciones e Incidencias
+                  Historial de Cierres e Incidencias
                 </h3>
               </div>
               <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-500">
-                Issues #4 y #7
+                Issues #7 y #10
               </span>
             </div>
             <p className="mt-2.5 text-sm text-slate-500">
-              Anulación lógica con motivo obligatorio por caja, historial de
-              cierres, acumulado mensual de tolerancia por cajero y resolución de
-              partes de incidencia 24/7.
+              Historial completo de cierres con filtros por fecha y cajero,
+              acumulado mensual de tolerancia/redondeo por operador (anti robo
+              hormiga) y resolución de partes de incidencia 24/7.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
-                  <SlidersHorizontal className="w-5 h-5" />
-                </div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  Configuración de Tolerancia / Redondeo
-                </h3>
-              </div>
-              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-500">
-                Issue #5
-              </span>
-            </div>
-            <p className="mt-2.5 text-sm text-slate-500">
-              Definición del margen de tolerancia en efectivo ($0 estricto por
-              defecto, $10, $100, $500 o valor personalizado) aplicable a cierres
-              futuros sin alterar cierres históricos.
-            </p>
-          </div>
+          <ConfiguracionRedondeoCard
+            onConfiguracionActualizada={() => void cargarTablero(false)}
+          />
         </section>
       </div>
     </AppLayout>
