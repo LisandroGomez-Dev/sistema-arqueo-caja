@@ -1,7 +1,6 @@
 import {
   ArrowLeft,
   Banknote,
-  CheckCircle2,
   CreditCard,
   Loader2,
   Lock,
@@ -11,11 +10,16 @@ import {
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { AppLayout } from '../components/AppLayout';
+import { CargaRapidaCard } from '../components/CargaRapidaCard';
+import { LibroDiarioTable } from '../components/LibroDiarioTable';
 import { useAuth } from '../context/AuthContext';
 import { formatearHoraArgentina, formatearPesos } from '../lib/formatMoney';
 import {
+  obtenerMovimientosEnCache,
+  obtenerMovimientosTurno,
   obtenerTurnoEnCache,
   obtenerTurnoPorId,
+  type MovimientoCaja,
   type TurnoActivo,
 } from '../services/api';
 
@@ -44,7 +48,7 @@ function iconoMetodo(codigo: string) {
 export function MostradorBasePage() {
   const { idTurno } = useParams<{ idTurno: string }>();
   const location = useLocation();
-  const { usuario, turnoActivo } = useAuth();
+  const { usuario, turnoActivo, setTurnoActivo } = useAuth();
 
   const estadoNav = location.state as { turnoInicial?: TurnoActivo } | null;
   const turnoInicial = idTurno
@@ -54,28 +58,42 @@ export function MostradorBasePage() {
   const [turnoSupervisado, setTurnoSupervisado] = useState<TurnoActivo | null>(
     turnoInicial,
   );
-  const [cargando, setCargando] = useState(Boolean(idTurno) && !turnoInicial);
-  const [error, setError] = useState<string | null>(null);
+  const [cargandoTurno, setCargandoTurno] = useState(
+    Boolean(idTurno) && !turnoInicial,
+  );
+  const [errorTurno, setErrorTurno] = useState<string | null>(null);
 
   const esSupervision = Boolean(idTurno);
+  const turnoMostrado = esSupervision ? turnoSupervisado : turnoActivo;
+  const idTurnoActual = turnoMostrado?.id_turno ?? idTurno ?? null;
+
+  const movsCache = idTurnoActual
+    ? obtenerMovimientosEnCache(idTurnoActual)
+    : null;
+  const [movimientos, setMovimientos] = useState<MovimientoCaja[]>(
+    movsCache ?? [],
+  );
+  const [cargandoMovs, setCargandoMovs] = useState(
+    Boolean(idTurnoActual) && !movsCache,
+  );
 
   useEffect(() => {
     if (!idTurno) {
       setTurnoSupervisado(null);
-      setCargando(false);
+      setCargandoTurno(false);
       return;
     }
 
     const desdeCache = estadoNav?.turnoInicial ?? obtenerTurnoEnCache(idTurno);
     if (desdeCache) {
       setTurnoSupervisado(desdeCache);
-      setCargando(false);
+      setCargandoTurno(false);
     } else {
-      setCargando(true);
+      setCargandoTurno(true);
     }
 
     let cancelado = false;
-    setError(null);
+    setErrorTurno(null);
 
     void obtenerTurnoPorId(idTurno)
       .then(({ turno }) => {
@@ -83,7 +101,7 @@ export function MostradorBasePage() {
       })
       .catch((err) => {
         if (!cancelado && !desdeCache) {
-          setError(
+          setErrorTurno(
             err instanceof Error
               ? err.message
               : 'No se pudo cargar la caja seleccionada.',
@@ -91,7 +109,7 @@ export function MostradorBasePage() {
         }
       })
       .finally(() => {
-        if (!cancelado) setCargando(false);
+        if (!cancelado) setCargandoTurno(false);
       });
 
     return () => {
@@ -99,9 +117,48 @@ export function MostradorBasePage() {
     };
   }, [estadoNav?.turnoInicial, idTurno]);
 
-  const turnoMostrado = esSupervision ? turnoSupervisado : turnoActivo;
+  useEffect(() => {
+    if (!idTurnoActual) return;
 
-  if (cargando) {
+    const desdeCache = obtenerMovimientosEnCache(idTurnoActual);
+    if (desdeCache) {
+      setMovimientos(desdeCache);
+      setCargandoMovs(false);
+    } else {
+      setCargandoMovs(true);
+    }
+
+    let cancelado = false;
+    void obtenerMovimientosTurno(idTurnoActual)
+      .then(({ movimientos: lista }) => {
+        if (!cancelado) setMovimientos(lista);
+      })
+      .catch(() => {
+        // Mantiene caché si fallara la revalidación silenciosa
+      })
+      .finally(() => {
+        if (!cancelado) setCargandoMovs(false);
+      });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [idTurnoActual]);
+
+  function manejarNuevoMovimiento(
+    movimiento: MovimientoCaja,
+    turnoActualizado: TurnoActivo,
+  ) {
+    setMovimientos((prev) => [movimiento, ...prev]);
+    if (esSupervision) {
+      setTurnoSupervisado(turnoActualizado);
+    }
+    if (turnoActivo && turnoActivo.id_turno === turnoActualizado.id_turno) {
+      setTurnoActivo(turnoActualizado);
+    }
+  }
+
+  if (cargandoTurno) {
     return (
       <AppLayout>
         <div className="min-h-[60vh] flex items-center justify-center">
@@ -114,12 +171,12 @@ export function MostradorBasePage() {
     );
   }
 
-  if (error || !turnoMostrado) {
+  if (errorTurno || !turnoMostrado) {
     return (
       <AppLayout>
         <div className="max-w-xl mx-auto mt-10 rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-800">
           <p className="font-semibold">
-            {error ?? 'No se encontró un turno activo para mostrar.'}
+            {errorTurno ?? 'No se encontró un turno activo para mostrar.'}
           </p>
           {usuario?.rol_usuario === 'ENCARGADO' && (
             <Link
@@ -167,7 +224,8 @@ export function MostradorBasePage() {
               <span className="font-mono font-semibold text-slate-700 tabular-nums">
                 {formatearPesos(turnoMostrado.fondo_inicial_efectivo)}
               </span>{' '}
-              · Operador: {turnoMostrado.usuario_apertura.nombre_completo}
+              · Atajos: F1 Ingreso · F2 Egreso · Operador:{' '}
+              {turnoMostrado.usuario_apertura.nombre_completo}
             </p>
           </div>
 
@@ -232,27 +290,20 @@ export function MostradorBasePage() {
           ))}
         </section>
 
-        {/* Estado base para Issue #2 */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 shrink-0">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900">
-                Caja #{turnoMostrado.caja.numero_caja} iniciada correctamente
-              </h2>
-              <p className="mt-1 text-sm text-slate-600">
-                La sesión{' '}
-                <span className="font-mono text-xs">{turnoMostrado.id_turno}</span>{' '}
-                opera de forma independiente al resto de las cajas del local
-                (<span className="font-semibold">RN-02</span>,{' '}
-                <span className="font-semibold">RN-05</span> y{' '}
-                <span className="font-semibold">RN-06</span>). El módulo de carga
-                rápida de ingresos/egresos y Libro Diario en vivo se incorporará en
-                el <span className="font-semibold">Issue #3</span>.
-              </p>
-            </div>
+        {/* Layout 2 columnas fiel a P3 Figma: Carga Rápida (izq) + Libro Diario en vivo (der) */}
+        <section className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+          <div className="xl:col-span-5">
+            <CargaRapidaCard
+              idTurno={turnoMostrado.id_turno}
+              onMovimientoRegistrado={manejarNuevoMovimiento}
+            />
+          </div>
+
+          <div className="xl:col-span-7">
+            <LibroDiarioTable
+              movimientos={movimientos}
+              cargando={cargandoMovs}
+            />
           </div>
         </section>
       </div>

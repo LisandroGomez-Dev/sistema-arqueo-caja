@@ -3,6 +3,31 @@ const API_BASE_URL = (
 ).replace(/\/$/, '');
 
 export type RolUsuario = 'CAJERO' | 'ENCARGADO';
+export type TipoMovimiento = 'INGRESO' | 'EGRESO';
+export type CodigoMetodoPago = 'EFECTIVO' | 'QR_TRANSFERENCIA' | 'TARJETA';
+export type OrigenCarga = 'MANUAL' | 'IA_VOZ_TEXTO' | 'IA_COMPROBANTE';
+export type EstadoMovimiento = 'ACTIVO' | 'ANULADO';
+
+export interface MovimientoCaja {
+  id_movimiento: string;
+  id_turno: string;
+  tipo_movimiento: TipoMovimiento;
+  monto_operacion: string;
+  concepto_descripcion: string | null;
+  origen_carga: OrigenCarga;
+  url_comprobante: string | null;
+  estado_movimiento: EstadoMovimiento;
+  motivo_anulacion: string | null;
+  fecha_hora_anulacion: string | null;
+  fecha_hora_registro: string;
+  metodo_pago: {
+    id_metodo_pago: string;
+    codigo_metodo: string;
+    nombre_metodo: string;
+  };
+  usuario_registro: OperadorPublico;
+  usuario_anulacion: OperadorPublico | null;
+}
 
 export interface OperadorPublico {
   id_usuario: string;
@@ -281,5 +306,54 @@ export async function abrirTurnoCaja(
   });
   invalidarCacheOperativa();
   escribirCache(`GET:/turnos/${data.turno.id_turno}`, data);
+  return data;
+}
+
+export function obtenerMovimientosEnCache(
+  idTurno: string,
+): MovimientoCaja[] | null {
+  return (
+    leerCache<{ movimientos: MovimientoCaja[] }>(
+      `GET:/turnos/${idTurno}/movimientos`,
+      30_000,
+    )?.movimientos ?? null
+  );
+}
+
+export function obtenerMovimientosTurno(
+  idTurno: string,
+): Promise<{ movimientos: MovimientoCaja[] }> {
+  return request(`/turnos/${idTurno}/movimientos`);
+}
+
+export async function registrarMovimientoTurno(
+  idTurno: string,
+  payload: {
+    tipo_movimiento: TipoMovimiento;
+    codigo_metodo_pago: CodigoMetodoPago;
+    monto_operacion: string;
+    concepto_descripcion?: string | null;
+    origen_carga?: OrigenCarga;
+  },
+): Promise<{ movimiento: MovimientoCaja; turno: TurnoActivo }> {
+  const data = await request<{ movimiento: MovimientoCaja; turno: TurnoActivo }>(
+    `/turnos/${idTurno}/movimientos`,
+    {
+      method: 'POST',
+      body: {
+        ...payload,
+        origen_carga: payload.origen_carga ?? 'MANUAL',
+      },
+    },
+  );
+
+  // Actualizar cachés locales inmediatamente para respuesta 0ms en navegación
+  escribirCache(`GET:/turnos/${idTurno}`, { turno: data.turno });
+  const prevMovs = obtenerMovimientosEnCache(idTurno) ?? [];
+  escribirCache(`GET:/turnos/${idTurno}/movimientos`, {
+    movimientos: [data.movimiento, ...prevMovs],
+  });
+  cacheDatos.delete('GET:/turnos/activos');
+
   return data;
 }
