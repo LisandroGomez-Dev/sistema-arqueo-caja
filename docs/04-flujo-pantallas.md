@@ -15,6 +15,8 @@
 
 ![Flujo de Pantallas Desktop PC y Estados Visuales en Figma](./img/flujo-pantallas-figma.png)
 
+> ℹ️ **Actualización UX v1.1 (`P3` y `M1`):** La vista general superior conserva el panorama completo (`P1`, `P2`, `P4`, `P6` y los 8 estados). Las pantallas actualizadas de **`P3` (Mostrador limpio)** y **`M1` (Chat Copiloto IA deslizable de derecha a izquierda)** se muestran en alta resolución en sus respectivas secciones más abajo, aplicándose en código los rótulos universales **24/7** (`Asistente Operativo 24/7` / `Soporte / Incidencia` en lugar de menciones exclusivas a turno noche).
+
 ---
 
 ## 1. Principios de Diseño UX para PC de Mostrador (*Desktop-First*)
@@ -107,6 +109,8 @@ flowchart TD
 - **Actores:** `CAJERO` (operación completa en cualquier turno) y `ENCARGADO` (habilita acción `Anular` en cada fila y acceso a `Panel Encargado`).
 - **Propósito:** Pantalla principal durante toda la jornada. Combina subtotales en vivo por canal, carga rápida manual en 3 clics (izquierda), libro diario inmutable (derecha) y acceso directo al **Chat Copiloto IA 24/7** (`Ctrl+K`) que se despliega desde la derecha.
 
+![P3 Terminal de Mostrador actualizado en Figma](./img/mostrador-p3-figma.png)
+
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
 │  Terminal de Mostrador — Turno #14   [✨ Abrir Copiloto IA ←] [🔒 Cerrar]│
@@ -134,6 +138,10 @@ flowchart TD
 - **Comportamiento clave:** Se desliza de derecha a izquierda (`440px`) sobre el mostrador ligeramente atenuado sin tapar por completo el contexto de caja. Funciona como un chat conversacional natural donde el cajero escribe, dicta por micrófono (`🎤`) o adjunta foto de ticket (`📷`):
   - **Cargas por voz/texto o comprobante (`#8`, `#9`):** La IA responde dentro del hilo con una **tarjeta borrador editable (`RN-09`)**, badge de confianza (`94%`) y botones **`Descartar`** / **`Confirmar`**. Nada impacta el libro diario sin confirmación humana.
   - **Asistente Operativo de Turno 24/7 (`#10`):** Ante dudas operativas o fallas (ej. corte de POSNET, transferencia demorada o pre-auditoría de descuadre), guía paso a paso y ofrece una tarjeta inline de **`Parte de Incidencia`** lista para **`Guardar`** (`RN-10`).
+
+![M1 Panel Desplegable Chat Copiloto IA en Figma](./img/chat-copiloto-m1-figma.png)
+
+> 📌 **Nota de textos universales para implementación:** Al llevar `M1` y `P3` a código React, usar exclusivamente terminología universal 24/7: chip **`Soporte / Incidencia`** (en vez de *"Guardia noche"*), cabecera **`Copiloto IA · Operativo 24/7`** y tarjeta de ayuda en `P3` con *"consultar soporte de turno"*.
 
 ```text
 ╔══════════════════════════════════════════════╗
