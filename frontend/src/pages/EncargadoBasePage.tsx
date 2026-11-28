@@ -225,25 +225,38 @@ export function EncargadoBasePage() {
 
         {/* Módulos de gestión del roadmap */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
-                  <ShieldCheck className="w-5 h-5" />
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between gap-4">
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Historial de Cierres y Acumulados (RF-05)
+                  </h3>
                 </div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  Historial de Cierres e Incidencias
-                </h3>
+                <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+                  Activo
+                </span>
               </div>
-              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-500">
-                Issues #7 y #10
-              </span>
+              <p className="mt-2.5 text-sm text-slate-500">
+                Consultá todos los arqueos cerrados por fecha, cajero y caja
+                física, revisá el acumulado mensual de tolerancia/redondeo por
+                operador y copiá resúmenes WhatsApp. (Incidencias 24/7 se suma
+                en <span className="font-semibold">v0.4 · Issue #10</span>).
+              </p>
             </div>
-            <p className="mt-2.5 text-sm text-slate-500">
-              Historial completo de cierres con filtros por fecha y cajero,
-              acumulado mensual de tolerancia/redondeo por operador (anti robo
-              hormiga) y resolución de partes de incidencia 24/7.
-            </p>
+
+            <div className="pt-3 border-t border-slate-100 flex justify-end">
+              <Link
+                to="/admin/historial"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 px-4 py-2 text-xs sm:text-sm font-semibold text-white transition-colors"
+              >
+                <span>Abrir Historial</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
 
           <ConfiguracionRedondeoCard

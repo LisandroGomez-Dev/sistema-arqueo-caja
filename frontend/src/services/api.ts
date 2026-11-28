@@ -123,6 +123,45 @@ export interface ArqueoCierre {
   detalles: DetalleArqueoMetodo[];
 }
 
+export interface AcumuladoMensualCajero {
+  mes: string;
+  usuario: OperadorPublico;
+  cantidad_cierres: number;
+  cierres_con_ajuste_tolerancia: number;
+  cierres_con_faltante_real: number;
+  cierres_con_sobrante_real: number;
+  total_declarado_mes: string;
+  acumulado_ajuste_redondeo: string;
+  acumulado_diferencia_real: string;
+  acumulado_faltantes_reales: string;
+  acumulado_sobrantes_reales: string;
+  alerta_sesgo_tolerancia: boolean;
+}
+
+export interface ResumenHistorialArqueos {
+  cantidad_cierres: number;
+  total_esperado: string;
+  total_declarado: string;
+  total_ajuste_redondeo: string;
+  total_diferencia_real: string;
+}
+
+export interface HistorialArqueosResultado {
+  mes_acumulado: string;
+  arqueos: ArqueoCierre[];
+  acumulado_mensual_por_cajero: AcumuladoMensualCajero[];
+  resumen_filtrado: ResumenHistorialArqueos;
+}
+
+export interface FiltrosHistorialArqueos {
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  id_usuario?: string;
+  id_caja?: string;
+  estado_resultado?: EstadoResultadoArqueo | '';
+  mes?: string;
+}
+
 export class ApiError extends Error {
   readonly status: number;
   readonly codigo: string;
@@ -515,4 +554,21 @@ export function obtenerArqueoPorId(
   idArqueo: string,
 ): Promise<{ arqueo: ArqueoCierre }> {
   return request(`/arqueos/${idArqueo}`);
+}
+
+export function obtenerHistorialArqueos(
+  filtros: FiltrosHistorialArqueos = {},
+): Promise<HistorialArqueosResultado> {
+  const params = new URLSearchParams();
+  if (filtros.fecha_desde) params.set('fecha_desde', filtros.fecha_desde);
+  if (filtros.fecha_hasta) params.set('fecha_hasta', filtros.fecha_hasta);
+  if (filtros.id_usuario) params.set('id_usuario', filtros.id_usuario);
+  if (filtros.id_caja) params.set('id_caja', filtros.id_caja);
+  if (filtros.estado_resultado) {
+    params.set('estado_resultado', filtros.estado_resultado);
+  }
+  if (filtros.mes) params.set('mes', filtros.mes);
+
+  const query = params.toString();
+  return request(`/arqueos${query ? `?${query}` : ''}`);
 }

@@ -83,18 +83,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     <span>Cajas en Vivo</span>
                   </Link>
 
-                  <div
-                    title="Disponible en Milestone v0.3 (Issue #7)"
-                    className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 cursor-not-allowed"
+                  <Link
+                    to="/admin/historial"
+                    onClick={() => setMenuMovilAbierto(false)}
+                    className={linkClass('/admin/historial')}
                   >
-                    <span className="flex items-center gap-2.5">
-                      <SlidersHorizontal className="w-4 h-4 shrink-0" />
-                      <span>Historial e Incidencias</span>
-                    </span>
-                    <span className="text-[10px] rounded bg-slate-800 px-1.5 py-0.5 text-slate-400">
-                      v0.3
-                    </span>
-                  </div>
+                    <SlidersHorizontal className="w-4 h-4 shrink-0" />
+                    <span>Historial de Cierres</span>
+                  </Link>
                 </div>
               </div>
 

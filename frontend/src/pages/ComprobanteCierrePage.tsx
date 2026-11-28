@@ -318,13 +318,21 @@ export function ComprobanteCierrePage() {
               </Link>
 
               {usuario?.rol_usuario === 'ENCARGADO' && (
-                <Link
-                  to="/admin"
-                  className="flex-1 h-11 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 text-sm font-semibold text-slate-700 inline-flex items-center justify-center gap-2 transition-colors"
-                >
-                  <span>Cajas en Vivo</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+                <>
+                  <Link
+                    to="/admin/historial"
+                    className="flex-1 h-11 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 text-sm font-semibold text-slate-700 inline-flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <span>Ver Historial</span>
+                  </Link>
+                  <Link
+                    to="/admin"
+                    className="flex-1 h-11 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 text-sm font-semibold text-slate-700 inline-flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <span>Cajas en Vivo</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </>
               )}
             </div>
           </aside>

@@ -5,6 +5,7 @@ import { AperturaPage } from './pages/AperturaPage';
 import { CierreCajaPage } from './pages/CierreCajaPage';
 import { ComprobanteCierrePage } from './pages/ComprobanteCierrePage';
 import { EncargadoBasePage } from './pages/EncargadoBasePage';
+import { HistorialEncargadoPage } from './pages/HistorialEncargadoPage';
 import { LoginPage } from './pages/LoginPage';
 import { MostradorBasePage } from './pages/MostradorBasePage';
 
@@ -51,6 +52,18 @@ function RutasAplicacion() {
             <Navigate to={turnoActivo ? '/mostrador' : '/apertura'} replace />
           ) : (
             <EncargadoBasePage />
+          )
+        }
+      />
+      <Route
+        path="/admin/historial"
+        element={
+          !usuario ? (
+            <Navigate to="/login" replace />
+          ) : usuario.rol_usuario !== 'ENCARGADO' ? (
+            <Navigate to={turnoActivo ? '/mostrador' : '/apertura'} replace />
+          ) : (
+            <HistorialEncargadoPage />
           )
         }
       />
