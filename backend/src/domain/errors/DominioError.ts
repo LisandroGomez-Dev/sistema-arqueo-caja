@@ -194,3 +194,15 @@ export class ArqueoNoEncontradoError extends DominioError {
     super(mensaje);
   }
 }
+
+/** Se lanza cuando un rango de fechas para consulta histórica está invertido. */
+export class RangoFechasInvalidoError extends DominioError {
+  readonly codigo = 'RANGO_FECHAS_INVALIDO';
+  readonly statusHttp = 400;
+
+  constructor(
+    mensaje = 'La fecha "desde" no puede ser posterior a la fecha "hasta".',
+  ) {
+    super(mensaje);
+  }
+}

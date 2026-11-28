@@ -33,3 +33,33 @@ export interface ArqueoCierreDTO {
   observaciones_cierre: string | null;
   detalles: DetalleArqueoMetodoDTO[];
 }
+
+export interface AcumuladoMensualCajeroDTO {
+  mes: string;
+  usuario: OperadorPublicoDTO;
+  cantidad_cierres: number;
+  cierres_con_ajuste_tolerancia: number;
+  cierres_con_faltante_real: number;
+  cierres_con_sobrante_real: number;
+  total_declarado_mes: string;
+  acumulado_ajuste_redondeo: string;
+  acumulado_diferencia_real: string;
+  acumulado_faltantes_reales: string;
+  acumulado_sobrantes_reales: string;
+  alerta_sesgo_tolerancia: boolean;
+}
+
+export interface ResumenHistorialArqueosDTO {
+  cantidad_cierres: number;
+  total_esperado: string;
+  total_declarado: string;
+  total_ajuste_redondeo: string;
+  total_diferencia_real: string;
+}
+
+export interface HistorialArqueosResultadoDTO {
+  mes_acumulado: string;
+  arqueos: ArqueoCierreDTO[];
+  acumulado_mensual_por_cajero: AcumuladoMensualCajeroDTO[];
+  resumen_filtrado: ResumenHistorialArqueosDTO;
+}

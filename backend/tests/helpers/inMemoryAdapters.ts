@@ -7,7 +7,10 @@ import type {
   OperadorPublicoDTO,
   TurnoActivoDTO,
 } from '../../src/application/dto/TurnoActivoDTO.js';
-import type { ArqueoRepositoryPort } from '../../src/application/ports/out/ArqueoRepositoryPort.js';
+import type {
+  ArqueoRepositoryPort,
+  FiltroListarArqueos,
+} from '../../src/application/ports/out/ArqueoRepositoryPort.js';
 import type { CajaRepositoryPort } from '../../src/application/ports/out/CajaRepositoryPort.js';
 import type { ConfiguracionRepositoryPort } from '../../src/application/ports/out/ConfiguracionRepositoryPort.js';
 import type { MetodoPagoRepositoryPort } from '../../src/application/ports/out/MetodoPagoRepositoryPort.js';
@@ -554,6 +557,34 @@ export class InMemoryArqueoRepository implements ArqueoRepositoryPort {
 
   async buscarPorId(idArqueo: string): Promise<ArqueoCierreDTO | null> {
     return this.arqueos.find((a) => a.id_arqueo === idArqueo) ?? null;
+  }
+
+  async listar(filtro: FiltroListarArqueos): Promise<ArqueoCierreDTO[]> {
+    return this.arqueos
+      .filter((a) => {
+        const fechaCierre = new Date(a.fecha_hora_cierre).getTime();
+        if (filtro.fechaDesde && fechaCierre < filtro.fechaDesde.getTime()) {
+          return false;
+        }
+        if (filtro.fechaHasta && fechaCierre > filtro.fechaHasta.getTime()) {
+          return false;
+        }
+        if (
+          filtro.idUsuarioOperador &&
+          a.usuario_apertura.id_usuario !== filtro.idUsuarioOperador
+        ) {
+          return false;
+        }
+        if (filtro.idCaja && a.caja.id_caja !== filtro.idCaja) {
+          return false;
+        }
+        return true;
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.fecha_hora_cierre).getTime() -
+          new Date(a.fecha_hora_cierre).getTime(),
+      );
   }
 }
 

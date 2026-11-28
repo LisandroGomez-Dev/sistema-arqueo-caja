@@ -1,5 +1,6 @@
 import {
   EstadoTurno as PrismaEstadoTurno,
+  Prisma,
   type PrismaClient,
 } from '@prisma/client';
 import type {
@@ -7,7 +8,10 @@ import type {
   DetalleArqueoMetodoDTO,
 } from '../../application/dto/ArqueoDTO.js';
 import type { OperadorPublicoDTO } from '../../application/dto/TurnoActivoDTO.js';
-import type { ArqueoRepositoryPort } from '../../application/ports/out/ArqueoRepositoryPort.js';
+import type {
+  ArqueoRepositoryPort,
+  FiltroListarArqueos,
+} from '../../application/ports/out/ArqueoRepositoryPort.js';
 import {
   ArqueoCierre,
   evaluarResultadoArqueo,
@@ -148,22 +152,12 @@ export class PrismaArqueoRepository implements ArqueoRepositoryPort {
     };
   }
 
-  async buscarPorId(idArqueo: string): Promise<ArqueoCierreDTO | null> {
-    const [row, snap] = await Promise.all([
-      this.prisma.arqueoCierre.findUnique({
-        where: { id_arqueo: idArqueo },
-        include: {
-          detalles: true,
-          turno: true,
-        },
-      }),
-      this.catalogo.obtener(),
-    ]);
-
-    if (!row) {
-      return null;
-    }
-
+  private mapearRowADTO(
+    row: Prisma.ArqueoCierreGetPayload<{
+      include: { detalles: true; turno: true };
+    }>,
+    snap: CatalogoSnapshot,
+  ): ArqueoCierreDTO {
     const multiploAplicado = Dinero.desde(
       row.multiplo_redondeo_aplicado.toString(),
     );
@@ -223,5 +217,54 @@ export class PrismaArqueoRepository implements ArqueoRepositoryPort {
       observaciones_cierre: row.observaciones_cierre,
       detalles: this.ordenarDetalles(detallesDTO),
     };
+  }
+
+  async buscarPorId(idArqueo: string): Promise<ArqueoCierreDTO | null> {
+    const [row, snap] = await Promise.all([
+      this.prisma.arqueoCierre.findUnique({
+        where: { id_arqueo: idArqueo },
+        include: {
+          detalles: true,
+          turno: true,
+        },
+      }),
+      this.catalogo.obtener(),
+    ]);
+
+    return row ? this.mapearRowADTO(row, snap) : null;
+  }
+
+  async listar(filtro: FiltroListarArqueos): Promise<ArqueoCierreDTO[]> {
+    const where: Prisma.ArqueoCierreWhereInput = {};
+
+    if (filtro.fechaDesde || filtro.fechaHasta) {
+      where.fecha_hora_cierre = {
+        ...(filtro.fechaDesde ? { gte: filtro.fechaDesde } : {}),
+        ...(filtro.fechaHasta ? { lte: filtro.fechaHasta } : {}),
+      };
+    }
+
+    if (filtro.idUsuarioOperador || filtro.idCaja) {
+      where.turno = {
+        ...(filtro.idUsuarioOperador
+          ? { id_usuario_apertura: filtro.idUsuarioOperador }
+          : {}),
+        ...(filtro.idCaja ? { id_caja: filtro.idCaja } : {}),
+      };
+    }
+
+    const [rows, snap] = await Promise.all([
+      this.prisma.arqueoCierre.findMany({
+        where,
+        include: {
+          detalles: true,
+          turno: true,
+        },
+        orderBy: { fecha_hora_cierre: 'desc' },
+      }),
+      this.catalogo.obtener(),
+    ]);
+
+    return rows.map((row) => this.mapearRowADTO(row, snap));
   }
 }

@@ -6,7 +6,10 @@ import {
   RolNoAutorizadoError,
   TurnoYaAbiertoError,
 } from '../../domain/errors/DominioError.js';
-import type { ArqueoCierreDTO } from '../dto/ArqueoDTO.js';
+import type {
+  ArqueoCierreDTO,
+  HistorialArqueosResultadoDTO,
+} from '../dto/ArqueoDTO.js';
 import {
   mapearConfiguracionCajaDTO,
   type ConfiguracionCajaDTO,
@@ -40,6 +43,10 @@ import {
   CerrarTurnoUseCase,
   type CerrarTurnoInput,
 } from '../use-cases/CerrarTurnoUseCase.js';
+import {
+  ConsultarHistorialArqueosUseCase,
+  type ConsultarHistorialArqueosInput,
+} from '../use-cases/ConsultarHistorialArqueosUseCase.js';
 import {
   ConfigurarRedondeoUseCase,
   type ConfigurarRedondeoInput,
@@ -81,6 +88,7 @@ export class CajaFacade {
   private readonly anularMovimientoUC: AnularMovimientoUseCase;
   private readonly configurarRedondeoUC: ConfigurarRedondeoUseCase;
   private readonly cerrarTurnoUC: CerrarTurnoUseCase;
+  private readonly consultarHistorialArqueosUC: ConsultarHistorialArqueosUseCase;
 
   constructor(deps: CajaFacadeDependencies) {
     this.turnoRepo = deps.turnoRepo;
@@ -116,6 +124,9 @@ export class CajaFacade {
       deps.usuarioRepo,
       deps.configRepo,
       deps.metodoPagoRepo,
+      deps.arqueoRepo,
+    );
+    this.consultarHistorialArqueosUC = new ConsultarHistorialArqueosUseCase(
       deps.arqueoRepo,
     );
   }
@@ -246,5 +257,11 @@ export class CajaFacade {
     }
 
     return arqueo;
+  }
+
+  async consultarHistorialArqueos(
+    input: ConsultarHistorialArqueosInput,
+  ): Promise<HistorialArqueosResultadoDTO> {
+    return this.consultarHistorialArqueosUC.ejecutar(input);
   }
 }

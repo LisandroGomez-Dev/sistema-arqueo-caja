@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { CajaFacade } from '../../../application/facade/CajaFacade.js';
 import { autenticarJWT, requerirRol } from '../plugins/jwtAuth.js';
+import { listarArqueosQuerySchema } from '../schemas/arqueoSchemas.js';
 import {
   anularMovimientoBodySchema,
   registrarMovimientoBodySchema,
@@ -151,6 +152,22 @@ export async function turnoRoutes(
       });
 
       return reply.status(201).send({ arqueo });
+    },
+  );
+
+  app.get(
+    '/arqueos',
+    { preHandler: preHandlerEncargado },
+    async (request) => {
+      const query = listarArqueosQuerySchema.parse(request.query);
+      return cajaFacade.consultarHistorialArqueos({
+        fechaDesde: query.fecha_desde,
+        fechaHasta: query.fecha_hasta,
+        idUsuario: query.id_usuario,
+        idCaja: query.id_caja,
+        estadoResultado: query.estado_resultado,
+        mes: query.mes,
+      });
     },
   );
 
