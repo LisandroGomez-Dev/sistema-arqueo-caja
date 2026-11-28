@@ -56,3 +56,19 @@ export function formatearHoraArgentina(isoDate: string): string {
     return '--:--';
   }
 }
+
+export function formatearFechaHoraArgentina(isoDate: string): string {
+  try {
+    return new Intl.DateTimeFormat('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'America/Argentina/Buenos_Aires',
+    }).format(new Date(isoDate));
+  } catch {
+    return '--/--/---- --:--';
+  }
+}

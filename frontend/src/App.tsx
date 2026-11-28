@@ -2,6 +2,8 @@ import { Loader2 } from 'lucide-react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AperturaPage } from './pages/AperturaPage';
+import { CierreCajaPage } from './pages/CierreCajaPage';
+import { ComprobanteCierrePage } from './pages/ComprobanteCierrePage';
 import { EncargadoBasePage } from './pages/EncargadoBasePage';
 import { LoginPage } from './pages/LoginPage';
 import { MostradorBasePage } from './pages/MostradorBasePage';
@@ -86,6 +88,36 @@ function RutasAplicacion() {
           ) : (
             <MostradorBasePage />
           )
+        }
+      />
+      <Route
+        path="/cierre"
+        element={
+          !usuario ? (
+            <Navigate to="/login" replace />
+          ) : !turnoActivo ? (
+            <Navigate to="/apertura" replace />
+          ) : (
+            <CierreCajaPage />
+          )
+        }
+      />
+      <Route
+        path="/cierre/turno/:idTurno"
+        element={
+          !usuario ? (
+            <Navigate to="/login" replace />
+          ) : usuario.rol_usuario !== 'ENCARGADO' ? (
+            <Navigate to={turnoActivo ? '/mostrador' : '/apertura'} replace />
+          ) : (
+            <CierreCajaPage />
+          )
+        }
+      />
+      <Route
+        path="/cierre/comprobante/:idArqueo"
+        element={
+          !usuario ? <Navigate to="/login" replace /> : <ComprobanteCierrePage />
         }
       />
       <Route path="*" element={<Navigate to={rutaInicioUsuario} replace />} />

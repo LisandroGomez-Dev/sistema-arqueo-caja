@@ -274,18 +274,29 @@ export function MostradorBasePage() {
               </span>
             </button>
 
-            <button
-              type="button"
-              disabled
-              title="Disponible en Milestone v0.3 (Issue #6)"
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600/50 px-4 py-2.5 text-sm font-semibold text-white cursor-not-allowed"
-            >
-              <Lock className="w-4 h-4" />
-              <span>Cerrar Caja en 1 Clic</span>
-              <span className="rounded bg-emerald-950/30 px-1.5 py-0.5 text-[10px]">
-                v0.3
-              </span>
-            </button>
+            {turnoMostrado.estado_turno === 'ABIERTO' ? (
+              <Link
+                to={
+                  esSupervision
+                    ? `/cierre/turno/${turnoMostrado.id_turno}`
+                    : '/cierre'
+                }
+                state={{ turnoInicial: turnoMostrado }}
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors"
+              >
+                <Lock className="w-4 h-4" />
+                <span>Cerrar Caja en 1 Clic</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="inline-flex items-center gap-2 rounded-xl bg-zinc-700 px-4 py-2.5 text-sm font-semibold text-white cursor-not-allowed"
+              >
+                <Lock className="w-4 h-4" />
+                <span>Turno Cerrado</span>
+              </button>
+            )}
           </div>
         </header>
 

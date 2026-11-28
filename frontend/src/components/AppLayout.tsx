@@ -104,14 +104,24 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 </p>
                 <div className="space-y-1">
                   {turnoActivo ? (
-                    <Link
-                      to="/mostrador"
-                      onClick={() => setMenuMovilAbierto(false)}
-                      className={linkClass('/mostrador')}
-                    >
-                      <Monitor className="w-4 h-4 shrink-0" />
-                      <span>Mi Caja #{turnoActivo.caja.numero_caja}</span>
-                    </Link>
+                    <>
+                      <Link
+                        to="/mostrador"
+                        onClick={() => setMenuMovilAbierto(false)}
+                        className={linkClass('/mostrador')}
+                      >
+                        <Monitor className="w-4 h-4 shrink-0" />
+                        <span>Mi Caja #{turnoActivo.caja.numero_caja}</span>
+                      </Link>
+                      <Link
+                        to="/cierre"
+                        onClick={() => setMenuMovilAbierto(false)}
+                        className={linkClass('/cierre')}
+                      >
+                        <Lock className="w-4 h-4 shrink-0" />
+                        <span>Arqueo y Cierre 1-Clic</span>
+                      </Link>
+                    </>
                   ) : (
                     <Link
                       to="/apertura"
@@ -151,18 +161,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
                       <span>Caja #{turnoActivo.caja.numero_caja}</span>
                     </Link>
 
-                    <div
-                      title="Disponible en Milestone v0.3 (Issue #6)"
-                      className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 cursor-not-allowed"
+                    <Link
+                      to="/cierre"
+                      onClick={() => setMenuMovilAbierto(false)}
+                      className={linkClass('/cierre')}
                     >
-                      <span className="flex items-center gap-2.5">
-                        <Lock className="w-4 h-4 shrink-0" />
-                        <span>Arqueo y Cierre 1-Clic</span>
-                      </span>
-                      <span className="text-[10px] rounded bg-slate-800 px-1.5 py-0.5 text-slate-400">
-                        v0.3
-                      </span>
-                    </div>
+                      <Lock className="w-4 h-4 shrink-0" />
+                      <span>Arqueo y Cierre 1-Clic</span>
+                    </Link>
                   </>
                 )}
               </div>
