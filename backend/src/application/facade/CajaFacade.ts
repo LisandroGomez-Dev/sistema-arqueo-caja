@@ -1,9 +1,12 @@
 import type { RolUsuario } from '../../domain/entities/Usuario.js';
 import {
+  ArqueoNoEncontradoError,
   CajaOcupadaError,
   ConfiguracionNoEncontradaError,
+  RolNoAutorizadoError,
   TurnoYaAbiertoError,
 } from '../../domain/errors/DominioError.js';
+import type { ArqueoCierreDTO } from '../dto/ArqueoDTO.js';
 import {
   mapearConfiguracionCajaDTO,
   type ConfiguracionCajaDTO,
@@ -19,6 +22,7 @@ import type {
   OperadorPublicoDTO,
   TurnoActivoDTO,
 } from '../dto/TurnoActivoDTO.js';
+import type { ArqueoRepositoryPort } from '../ports/out/ArqueoRepositoryPort.js';
 import type { CajaRepositoryPort } from '../ports/out/CajaRepositoryPort.js';
 import type { ConfiguracionRepositoryPort } from '../ports/out/ConfiguracionRepositoryPort.js';
 import type { MetodoPagoRepositoryPort } from '../ports/out/MetodoPagoRepositoryPort.js';
@@ -32,6 +36,10 @@ import {
   type AnularMovimientoInput,
 } from '../use-cases/AnularMovimientoUseCase.js';
 import { AutenticarUsuarioUseCase } from '../use-cases/AutenticarUsuarioUseCase.js';
+import {
+  CerrarTurnoUseCase,
+  type CerrarTurnoInput,
+} from '../use-cases/CerrarTurnoUseCase.js';
 import {
   ConfigurarRedondeoUseCase,
   type ConfigurarRedondeoInput,
@@ -51,6 +59,7 @@ export interface CajaFacadeDependencies {
   configRepo: ConfiguracionRepositoryPort;
   metodoPagoRepo: MetodoPagoRepositoryPort;
   movimientoRepo: MovimientoRepositoryPort;
+  arqueoRepo: ArqueoRepositoryPort;
   pinHasher: PinHasherPort;
 }
 
@@ -62,6 +71,7 @@ export class CajaFacade {
   private readonly usuarioRepo: UsuarioRepositoryPort;
   private readonly cajaRepo: CajaRepositoryPort;
   private readonly configRepo: ConfiguracionRepositoryPort;
+  private readonly arqueoRepo: ArqueoRepositoryPort;
   private readonly autenticarUsuarioUC: AutenticarUsuarioUseCase;
   private readonly abrirTurnoUC: AbrirTurnoUseCase;
   private readonly obtenerTurnoActivoUC: ObtenerTurnoActivoUseCase;
@@ -70,12 +80,14 @@ export class CajaFacade {
   private readonly listarMovimientosTurnoUC: ListarMovimientosTurnoUseCase;
   private readonly anularMovimientoUC: AnularMovimientoUseCase;
   private readonly configurarRedondeoUC: ConfigurarRedondeoUseCase;
+  private readonly cerrarTurnoUC: CerrarTurnoUseCase;
 
   constructor(deps: CajaFacadeDependencies) {
     this.turnoRepo = deps.turnoRepo;
     this.usuarioRepo = deps.usuarioRepo;
     this.cajaRepo = deps.cajaRepo;
     this.configRepo = deps.configRepo;
+    this.arqueoRepo = deps.arqueoRepo;
     this.autenticarUsuarioUC = new AutenticarUsuarioUseCase(deps.usuarioRepo, deps.pinHasher);
     this.abrirTurnoUC = new AbrirTurnoUseCase(deps.turnoRepo, deps.usuarioRepo, deps.cajaRepo);
     this.obtenerTurnoActivoUC = new ObtenerTurnoActivoUseCase(deps.turnoRepo);
@@ -98,6 +110,13 @@ export class CajaFacade {
     this.configurarRedondeoUC = new ConfigurarRedondeoUseCase(
       deps.configRepo,
       deps.usuarioRepo,
+    );
+    this.cerrarTurnoUC = new CerrarTurnoUseCase(
+      deps.turnoRepo,
+      deps.usuarioRepo,
+      deps.configRepo,
+      deps.metodoPagoRepo,
+      deps.arqueoRepo,
     );
   }
 
@@ -201,5 +220,31 @@ export class CajaFacade {
     input: AnularMovimientoInput,
   ): Promise<AnularMovimientoResultadoDTO> {
     return this.anularMovimientoUC.ejecutar(input);
+  }
+
+  async cerrarTurno(input: CerrarTurnoInput): Promise<ArqueoCierreDTO> {
+    return this.cerrarTurnoUC.ejecutar(input);
+  }
+
+  async obtenerArqueoPorId(
+    idArqueo: string,
+    solicitante: { idUsuario: string; rolUsuario: RolUsuario },
+  ): Promise<ArqueoCierreDTO> {
+    const arqueo = await this.arqueoRepo.buscarPorId(idArqueo);
+    if (!arqueo) {
+      throw new ArqueoNoEncontradoError();
+    }
+
+    if (
+      solicitante.rolUsuario !== 'ENCARGADO' &&
+      arqueo.usuario_apertura.id_usuario !== solicitante.idUsuario &&
+      arqueo.usuario_cierre.id_usuario !== solicitante.idUsuario
+    ) {
+      throw new RolNoAutorizadoError(
+        'Solo podés consultar los comprobantes de cierre de tus propios turnos (RN-08).',
+      );
+    }
+
+    return arqueo;
   }
 }

@@ -12,6 +12,33 @@ export type EstadoResultadoArqueo =
   | 'SOBRANTE'
   | 'FALTANTE';
 
+export function evaluarResultadoArqueo(
+  ajusteRedondeoTotal: Dinero,
+  diferenciaRealTotal: Dinero,
+  multiploRedondeoAplicado: Dinero,
+): {
+  estadoResultado: EstadoResultadoArqueo;
+  alertaPosibleReclamoCliente: boolean;
+} {
+  let estadoResultado: EstadoResultadoArqueo;
+  if (diferenciaRealTotal.esCero() && ajusteRedondeoTotal.esCero()) {
+    estadoResultado = 'CUADRE_PERFECTO';
+  } else if (diferenciaRealTotal.esCero() && !ajusteRedondeoTotal.esCero()) {
+    estadoResultado = 'DENTRO_TOLERANCIA';
+  } else if (diferenciaRealTotal.esPositivo()) {
+    estadoResultado = 'SOBRANTE';
+  } else {
+    estadoResultado = 'FALTANTE';
+  }
+
+  return {
+    estadoResultado,
+    alertaPosibleReclamoCliente:
+      diferenciaRealTotal.esPositivo() &&
+      diferenciaRealTotal.mayorQue(multiploRedondeoAplicado),
+  };
+}
+
 export interface ArqueoCierreProps {
   idArqueo: string;
   idTurno: string;
@@ -136,34 +163,21 @@ export class ArqueoCierre {
   }
 
   obtenerEstadoResultado(): EstadoResultadoArqueo {
-    if (
-      this._diferenciaRealTotal.esCero() &&
-      this._ajusteRedondeoTotal.esCero()
-    ) {
-      return 'CUADRE_PERFECTO';
-    }
-
-    if (
-      this._diferenciaRealTotal.esCero() &&
-      !this._ajusteRedondeoTotal.esCero()
-    ) {
-      return 'DENTRO_TOLERANCIA';
-    }
-
-    if (this._diferenciaRealTotal.esPositivo()) {
-      return 'SOBRANTE';
-    }
-
-    return 'FALTANTE';
+    return evaluarResultadoArqueo(
+      this._ajusteRedondeoTotal,
+      this._diferenciaRealTotal,
+      this.multiploRedondeoAplicado,
+    ).estadoResultado;
   }
 
   /**
    * Alerta de posible reclamo de cliente cuando existe un sobrante que supera el margen (RN-07).
    */
   requiereAlertaPosibleReclamoCliente(): boolean {
-    return (
-      this._diferenciaRealTotal.esPositivo() &&
-      this._diferenciaRealTotal.mayorQue(this.multiploRedondeoAplicado)
-    );
+    return evaluarResultadoArqueo(
+      this._ajusteRedondeoTotal,
+      this._diferenciaRealTotal,
+      this.multiploRedondeoAplicado,
+    ).alertaPosibleReclamoCliente;
   }
 }

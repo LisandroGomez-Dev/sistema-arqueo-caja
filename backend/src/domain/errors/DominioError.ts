@@ -184,3 +184,13 @@ export class MetodoDuplicadoEnArqueoError extends DominioError {
     super(mensaje);
   }
 }
+
+/** Se lanza cuando el arqueo de cierre solicitado no existe. */
+export class ArqueoNoEncontradoError extends DominioError {
+  readonly codigo = 'ARQUEO_NO_ENCONTRADO';
+  readonly statusHttp = 404;
+
+  constructor(mensaje = 'El comprobante de arqueo solicitado no existe.') {
+    super(mensaje);
+  }
+}

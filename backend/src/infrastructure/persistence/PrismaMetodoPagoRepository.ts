@@ -9,4 +9,9 @@ export class PrismaMetodoPagoRepository implements MetodoPagoRepositoryPort {
     const snap = await this.catalogo.obtener();
     return snap.metodosPorCodigo.get(codigoMetodo.trim().toUpperCase()) ?? null;
   }
+
+  async listarActivos(): Promise<MetodoPago[]> {
+    const snap = await this.catalogo.obtener();
+    return snap.metodosPago;
+  }
 }

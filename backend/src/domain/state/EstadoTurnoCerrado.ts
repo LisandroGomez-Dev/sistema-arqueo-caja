@@ -28,4 +28,8 @@ export class EstadoTurnoCerrado implements EstadoTurno {
   ): void {
     throw new TurnoCerradoError();
   }
+
+  cerrar(_turno: TurnoCaja, _fechaCierre: Date): void {
+    throw new TurnoCerradoError();
+  }
 }

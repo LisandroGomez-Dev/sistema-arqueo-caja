@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import type { ArqueoCierreDTO } from '../../src/application/dto/ArqueoDTO.js';
 import type { MovimientoDTO } from '../../src/application/dto/MovimientoDTO.js';
 import type {
   CajaConEstadoDTO,
@@ -6,6 +7,7 @@ import type {
   OperadorPublicoDTO,
   TurnoActivoDTO,
 } from '../../src/application/dto/TurnoActivoDTO.js';
+import type { ArqueoRepositoryPort } from '../../src/application/ports/out/ArqueoRepositoryPort.js';
 import type { CajaRepositoryPort } from '../../src/application/ports/out/CajaRepositoryPort.js';
 import type { ConfiguracionRepositoryPort } from '../../src/application/ports/out/ConfiguracionRepositoryPort.js';
 import type { MetodoPagoRepositoryPort } from '../../src/application/ports/out/MetodoPagoRepositoryPort.js';
@@ -16,6 +18,7 @@ import type {
   UsuarioConHash,
   UsuarioRepositoryPort,
 } from '../../src/application/ports/out/UsuarioRepositoryPort.js';
+import type { ArqueoCierre } from '../../src/domain/entities/ArqueoCierre.js';
 import { Caja } from '../../src/domain/entities/Caja.js';
 import { ConfiguracionCaja } from '../../src/domain/entities/ConfiguracionCaja.js';
 import { MetodoPago } from '../../src/domain/entities/MetodoPago.js';
@@ -25,6 +28,8 @@ import { Usuario } from '../../src/domain/entities/Usuario.js';
 import {
   CajaNoEncontradaError,
   CajaOcupadaError,
+  TurnoCerradoError,
+  TurnoNoEncontradoError,
   TurnoYaAbiertoError,
   UsuarioNoEncontradoError,
 } from '../../src/domain/errors/DominioError.js';
@@ -165,6 +170,10 @@ export class InMemoryMetodoPagoRepository implements MetodoPagoRepositoryPort {
 
   buscarPorId(idMetodoPago: string): MetodoPago | undefined {
     return this.metodos.find((m) => m.idMetodoPago === idMetodoPago);
+  }
+
+  async listarActivos(): Promise<MetodoPago[]> {
+    return this.metodos.filter((m) => m.estaActivo);
   }
 }
 
@@ -456,6 +465,98 @@ export class InMemoryPinHasher implements PinHasherPort {
   }
 }
 
+export class InMemoryArqueoRepository implements ArqueoRepositoryPort {
+  readonly arqueos: ArqueoCierreDTO[] = [];
+
+  constructor(
+    private readonly turnoRepo: InMemoryTurnoRepository,
+    private readonly usuarioRepo: UsuarioRepositoryPort,
+    private readonly cajaRepo: CajaRepositoryPort,
+    private readonly configRepo: ConfiguracionRepositoryPort,
+  ) {}
+
+  async guardarCierreAtomico(
+    turnoCerrado: TurnoCaja,
+    arqueo: ArqueoCierre,
+  ): Promise<ArqueoCierreDTO> {
+    const turnoAlmacenado = await this.turnoRepo.buscarPorId(turnoCerrado.idTurno);
+    if (!turnoAlmacenado) {
+      throw new TurnoNoEncontradoError();
+    }
+
+    if (this.arqueos.some((a) => a.id_turno === arqueo.idTurno)) {
+      throw new TurnoCerradoError();
+    }
+
+    const [usuarioApertura, usuarioCierre, caja, config] = await Promise.all([
+      this.usuarioRepo.buscarPorId(turnoCerrado.idUsuarioApertura),
+      this.usuarioRepo.buscarPorId(arqueo.idUsuarioCierre),
+      this.cajaRepo.buscarPorId(turnoCerrado.idCaja),
+      this.configRepo.obtenerActual(),
+    ]);
+
+    if (!usuarioApertura || !usuarioCierre) {
+      throw new UsuarioNoEncontradoError();
+    }
+    if (!caja) {
+      throw new CajaNoEncontradaError();
+    }
+
+    const dto: ArqueoCierreDTO = {
+      id_arqueo: arqueo.idArqueo,
+      id_turno: arqueo.idTurno,
+      nombre_comercio: config?.nombreComercio ?? 'Comercio ArqueoCaja',
+      caja: {
+        id_caja: caja.idCaja,
+        numero_caja: caja.numeroCaja,
+        nombre_caja: caja.nombreCaja,
+      },
+      usuario_apertura: {
+        id_usuario: usuarioApertura.idUsuario,
+        nombre_completo: usuarioApertura.nombreCompleto,
+        rol_usuario: usuarioApertura.rolUsuario,
+      },
+      usuario_cierre: {
+        id_usuario: usuarioCierre.idUsuario,
+        nombre_completo: usuarioCierre.nombreCompleto,
+        rol_usuario: usuarioCierre.rolUsuario,
+      },
+      fondo_inicial_efectivo: turnoCerrado.fondoInicialEfectivo.aString(),
+      fecha_hora_apertura: turnoCerrado.fechaHoraApertura.toISOString(),
+      fecha_hora_cierre: (
+        turnoCerrado.fechaHoraCierre ?? arqueo.fechaHoraCierre
+      ).toISOString(),
+      multiplo_redondeo_aplicado: arqueo.multiploRedondeoAplicado.aString(),
+      total_esperado_general: arqueo.totalEsperadoGeneral.aString(),
+      total_declarado_general: arqueo.totalDeclaradoGeneral.aString(),
+      ajuste_redondeo_total: arqueo.ajusteRedondeoTotal.aString(),
+      diferencia_real_total: arqueo.diferenciaRealTotal.aString(),
+      estado_resultado: arqueo.obtenerEstadoResultado(),
+      alerta_posible_reclamo_cliente:
+        arqueo.requiereAlertaPosibleReclamoCliente(),
+      observaciones_cierre: arqueo.observacionesCierre,
+      detalles: arqueo.detalles.map((d) => ({
+        id_detalle_arqueo: d.idDetalleArqueo,
+        id_metodo_pago: d.metodoPago.idMetodoPago,
+        codigo_metodo: d.metodoPago.codigoMetodo,
+        nombre_metodo: d.metodoPago.nombreMetodo,
+        permite_redondeo: d.metodoPago.permiteRedondeo,
+        monto_esperado: d.montoEsperado.aString(),
+        monto_declarado: d.montoDeclarado.aString(),
+        ajuste_redondeo: d.ajusteRedondeo.aString(),
+        diferencia_real: d.diferenciaReal.aString(),
+      })),
+    };
+
+    this.arqueos.push(dto);
+    return dto;
+  }
+
+  async buscarPorId(idArqueo: string): Promise<ArqueoCierreDTO | null> {
+    return this.arqueos.find((a) => a.id_arqueo === idArqueo) ?? null;
+  }
+}
+
 export function crearContextoEnMemoria() {
   const usuarioRepo = new InMemoryUsuarioRepository();
   const configRepo = new InMemoryConfiguracionRepository();
@@ -473,6 +574,12 @@ export function crearContextoEnMemoria() {
     movimientoRepo,
   );
   cajaRepo.vincularTurnoRepo(turnoRepo);
+  const arqueoRepo = new InMemoryArqueoRepository(
+    turnoRepo,
+    usuarioRepo,
+    cajaRepo,
+    configRepo,
+  );
   const pinHasher = new InMemoryPinHasher();
 
   return {
@@ -482,6 +589,7 @@ export function crearContextoEnMemoria() {
     metodoPagoRepo,
     movimientoRepo,
     turnoRepo,
+    arqueoRepo,
     pinHasher,
   };
 }

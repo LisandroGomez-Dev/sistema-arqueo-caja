@@ -4,6 +4,10 @@ import {
 } from '../errors/DominioError.js';
 import type { CodigoEstadoTurno, EstadoTurno } from '../state/EstadoTurno.js';
 import { Dinero } from '../value-objects/Dinero.js';
+import {
+  ArqueoCierre,
+  type LineaCalculoArqueoInput,
+} from './ArqueoCierre.js';
 import type { MetodoPago } from './MetodoPago.js';
 import type { MovimientoCaja } from './MovimientoCaja.js';
 import type { Usuario } from './Usuario.js';
@@ -73,6 +77,33 @@ export class TurnoCaja {
 
   cambiarEstado(nuevoEstado: EstadoTurno): void {
     this.estado = nuevoEstado;
+  }
+
+  cerrar(params: {
+    idArqueo: string;
+    usuarioCierre: Usuario;
+    multiploRedondeoAplicado: Dinero;
+    observacionesCierre: string | null;
+    lineas: LineaCalculoArqueoInput[];
+    fechaCierre?: Date;
+  }): ArqueoCierre {
+    this.estado.validarOperacion();
+
+    const fechaCierre = params.fechaCierre ?? new Date();
+    const arqueo = ArqueoCierre.calcular(
+      {
+        idArqueo: params.idArqueo,
+        idTurno: this.idTurno,
+        idUsuarioCierre: params.usuarioCierre.idUsuario,
+        multiploRedondeoAplicado: params.multiploRedondeoAplicado,
+        observacionesCierre: params.observacionesCierre,
+        fechaHoraCierre: fechaCierre,
+      },
+      params.lineas,
+    );
+
+    this.estado.cerrar(this, fechaCierre);
+    return arqueo;
   }
 
   /**

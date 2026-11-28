@@ -5,7 +5,10 @@ import {
   anularMovimientoBodySchema,
   registrarMovimientoBodySchema,
 } from '../schemas/movimientoSchemas.js';
-import { abrirTurnoBodySchema } from '../schemas/turnoSchemas.js';
+import {
+  abrirTurnoBodySchema,
+  cerrarTurnoBodySchema,
+} from '../schemas/turnoSchemas.js';
 
 export async function turnoRoutes(
   app: FastifyInstance,
@@ -131,6 +134,39 @@ export async function turnoRoutes(
       });
 
       return reply.status(200).send(resultado);
+    },
+  );
+
+  app.post<{ Params: { idTurno: string } }>(
+    '/turnos/:idTurno/cerrar',
+    { preHandler: preHandlerOperacion },
+    async (request, reply) => {
+      const body = cerrarTurnoBodySchema.parse(request.body);
+      const arqueo = await cajaFacade.cerrarTurno({
+        idTurno: request.params.idTurno,
+        idUsuarioCierre: request.user.id_usuario,
+        rolUsuario: request.user.rol_usuario,
+        efectivoDeclarado: body.efectivo_declarado,
+        observacionesCierre: body.observaciones_cierre ?? null,
+      });
+
+      return reply.status(201).send({ arqueo });
+    },
+  );
+
+  app.get<{ Params: { idArqueo: string } }>(
+    '/arqueos/:idArqueo',
+    { preHandler: preHandlerOperacion },
+    async (request) => {
+      const arqueo = await cajaFacade.obtenerArqueoPorId(
+        request.params.idArqueo,
+        {
+          idUsuario: request.user.id_usuario,
+          rolUsuario: request.user.rol_usuario,
+        },
+      );
+
+      return { arqueo };
     },
   );
 }

@@ -17,4 +17,5 @@ export interface EstadoTurno {
     motivo: string,
     encargado: Usuario,
   ): void;
+  cerrar(turno: TurnoCaja, fechaCierre: Date): void;
 }

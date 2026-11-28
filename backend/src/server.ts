@@ -4,6 +4,7 @@ import { CajaFacade } from './application/facade/CajaFacade.js';
 import { buildApp } from './infrastructure/http/app.js';
 import { CatalogoCache } from './infrastructure/persistence/CatalogoCache.js';
 import { prisma } from './infrastructure/persistence/prismaClient.js';
+import { PrismaArqueoRepository } from './infrastructure/persistence/PrismaArqueoRepository.js';
 import { PrismaCajaRepository } from './infrastructure/persistence/PrismaCajaRepository.js';
 import { PrismaConfiguracionRepository } from './infrastructure/persistence/PrismaConfiguracionRepository.js';
 import { PrismaMetodoPagoRepository } from './infrastructure/persistence/PrismaMetodoPagoRepository.js';
@@ -51,6 +52,7 @@ async function start(): Promise<void> {
     configRepo: new PrismaConfiguracionRepository(prisma, catalogo),
     metodoPagoRepo: new PrismaMetodoPagoRepository(catalogo),
     movimientoRepo: new PrismaMovimientoRepository(prisma, catalogo),
+    arqueoRepo: new PrismaArqueoRepository(prisma, catalogo),
     pinHasher: new BcryptPinHasher(),
   });
 
